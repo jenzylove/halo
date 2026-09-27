@@ -16,6 +16,7 @@ export async function migrate() {
   const q = sql();
   await q`create table if not exists users (id text primary key, wallet text not null, created_at timestamptz default now())`;
   await q`alter table users add column if not exists ip text`;
+  await q`create table if not exists owners (user_id text primary key, owner text not null, linked_at timestamptz default now())`;
   await q`create table if not exists mandates (
     id text primary key, user_id text not null, instruction text not null, terms jsonb not null, terms_hash text not null,
     max_total numeric not null, expires_at timestamptz not null, tx text, created_at timestamptz default now())`;

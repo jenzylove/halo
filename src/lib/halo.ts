@@ -10,6 +10,7 @@ import { migrate, saveRecords, sql } from "./db";
 import { canonical, compileMandate } from "./mandate";
 import { MERCHANTS, merchantBySlug, verifiedNames, type Listing, type MerchantDef } from "./merchants";
 import { recycle } from "./recycle";
+import { transferFromAgent } from "./relay";
 import { sha256 } from "./serv";
 import type { MandateTerms, Offer, Reason, Verdict } from "./types";
 import { asViemAccount, serverAccount, userAccount } from "./wallets";
@@ -302,7 +303,32 @@ async function settleClaim(userId: string, approvalId: Hex, filedBy: string, evi
     ${paidOut}, ${verdict.merchantFault}, ${paidOut > 0 ? "paid" : "rejected"}, ${fileTx}, ${resolveTx})
     on conflict (id) do nothing`;
   await sql()`update purchases set status = ${paidOut > 0 ? "refunded" : "ok"} where id = ${approvalId}`;
-  if (paidOut > 0) await onStep({ kind: "payout", amount: paidOut, tx: resolveTx });
-  else await onStep({ kind: "tx", label: "Claim resolved, not covered", tx: resolveTx });
+  if (paidOut > 0) {
+    await onStep({ kind: "payout", amount: paidOut, tx: resolveTx });
+    // Refunds belong to the human who owns the agent: forward them when a wallet is linked.
+    const owner = await ownerOf(userId);
+    if (owner) {
+      try {
+        const fwd = await transferFromAgent(userId, owner, chain.toUnits(paidOut));
+        await onStep({ kind: "tx", label: `Forwarded ${paidOut.toFixed(2)} USDC to your wallet ${owner.slice(0, 6)}…${owner.slice(-4)}`, tx: fwd });
+      } catch (e) {
+        await onStep({ kind: "info", text: `Refund is in your agent wallet; forwarding to your wallet failed (${String(e).slice(0, 80)}).` });
+      }
+    }
+  } else await onStep({ kind: "tx", label: "Claim resolved, not covered", tx: resolveTx });
   return { status: receipt.status, payout: paidOut, resolveTx };
+}
+
+// ---------- owners ----------
+
+export async function ownerOf(userId: string): Promise<Hex | null> {
+  await migrate();
+  const [row] = (await sql()`select owner from owners where user_id = ${userId}`) as { owner: string }[];
+  return (row?.owner as Hex) ?? null;
+}
+
+export async function linkOwner(userId: string, owner: Hex) {
+  await migrate();
+  await sql()`insert into owners (user_id, owner) values (${userId}, ${owner.toLowerCase()})
+    on conflict (user_id) do update set owner = excluded.owner, linked_at = now()`;
 }

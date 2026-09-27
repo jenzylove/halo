@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { StepLog } from "@/components/StepLog";
+import { WalletPanel } from "@/components/WalletPanel";
 import type { Step } from "@/lib/halo";
 import type { ReasoningRecord } from "@/lib/serv";
 import { postStream } from "@/lib/sse";
@@ -93,6 +94,10 @@ export default function Dashboard() {
           "not created yet"
         )}
       </p>
+
+      <div className="mt-8">
+        <WalletPanel />
+      </div>
 
       {me.purchases.length === 0 ? (
         <p className="mt-16 text-center text-muted">

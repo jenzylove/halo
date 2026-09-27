@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { StepLog } from "@/components/StepLog";
+import { WalletPanel } from "@/components/WalletPanel";
 import type { Step } from "@/lib/halo";
 import { postStream } from "@/lib/sse";
 import type { MandateTerms } from "@/lib/types";
@@ -81,7 +82,11 @@ export default function Try() {
         Halo handle both. Prices are scaled down for testnet USDC.
       </p>
 
-      <div className="mt-10">
+      <div className="mt-8">
+        <WalletPanel compact />
+      </div>
+
+      <div className="mt-8">
         <textarea
           value={instruction}
           onChange={(e) => setInstruction(e.target.value)}

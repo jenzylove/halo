@@ -108,3 +108,20 @@ A separate adversarial audit of commit `ba27d7f` against the hackathon rules and
 | 8 | Low | Reasoning records readable by anyone with an id | Records only for the owning session | Foreign id returns 404 |
 | 9 | Low | Every page view created a CDP wallet | Wallet created on confirm or explicit connect only | Fresh visitor gets `agent: null` |
 | 10 | Low | Standalone `tsc` failed before type generation; lint noise from vendored libs | `pnpm typecheck` runs `next typegen` first; lint scoped to app code | typecheck 0 errors, lint 0 problems |
+
+---
+
+# Second external audit, 2026-09-27 (commit 160030e)
+
+An independent reviewer rated the build a strong demo but not yet a credible guarantee. Their findings and what changed:
+
+| Severity | Finding | Fix |
+|---|---|---|
+| Critical | Open coverage could reach 20x the fund, so a valid claim could fail at payout; a failed resolution was re-filed against the wrong status | Pool switched to **full reserve** (leverage 1x, cold key [tx](https://sepolia.basescan.org/tx/0x57a6be7b6ea0e44a68de965c7df5f05464133b1ffd7dd60b11d764e1cc845b4c)); claims already open are never filed twice; a payout that cannot settle stays open instead of failing |
+| High | "Sent to manual review" had no review path, so undecidable claims were silently denied | Undecidable claims stay **open onchain under review**; an operator review action resolves them; nothing is denied automatically |
+| High | MCP confirmation is advisory; the key is a URL bearer | Documented honestly: the API key is **delegated spending authority** (docs, SECURITY.md) |
+| High | AgentKit track fit: CDP SDK only | **Coinbase AgentKit** now in the money flow: the treasury agent funds each new shopping agent with AgentKit's `ERC20ActionProvider.transfer` on a `CdpEvmWalletProvider` |
+| Medium | Fee kept when the x402 payment fails | Failed payments refund the fee from the fund and close the protection |
+| Medium | An empty `checks` array could reach approve | Deterministic backstop: one check for the item plus one per rule, or the user decides |
+| Medium | Merchants could unbond while claims were open | A merchant that requests unbonding is no longer trusted; unbond delay (8 days) now exceeds fee window plus claim window (1 day) |
+| Copy | "Nobody protects the buyer" too broad (escrow products exist) | Positioning is now **post-payment protection**: Halo still protects you after the merchant has been paid |

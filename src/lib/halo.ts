@@ -64,9 +64,23 @@ export async function ensureUser(userId: string, onStep?: OnStep, ip = "unknown"
     if ((await balanceOf(treasury.address)) < starter) throw new Error(REFILL_HINT);
 
     // Coinbase AgentKit: the treasury agent funds the new shopping agent with AgentKit's ERC20 transfer action.
-    const transactionHash = await agentkitSendUsdc(treasury.address, acct.address, STARTER_USDC);
+    // If AgentKit cannot load in this runtime, fall back to the same transfer through the CDP SDK so the demo never breaks.
+    let transactionHash: Hex;
+    let via = "AgentKit";
+    try {
+      transactionHash = await agentkitSendUsdc(treasury.address, acct.address, STARTER_USDC);
+    } catch {
+      via = "CDP";
+      const data = encodeFunctionData({ abi: erc20Abi, functionName: "transfer", args: [acct.address, starter] });
+      const r = await (await import("./wallets")).cdpClient().evm.sendTransaction({
+        address: treasury.address,
+        network: "base-sepolia",
+        transaction: { to: USDC.address as Hex, data, value: 0n },
+      });
+      transactionHash = r.transactionHash as Hex;
+    }
     await chain.publicClient.waitForTransactionReceipt({ hash: transactionHash });
-    await onStep?.({ kind: "tx", stage: "funded", label: `Your agent got ${STARTER_USDC.toFixed(2)} test USDC to shop with`, tx: transactionHash });
+    await onStep?.({ kind: "tx", stage: "funded", label: `Your agent got ${STARTER_USDC.toFixed(2)} test USDC to shop with (sent by ${via})`, tx: transactionHash });
   }
   // Only remember the user once the agent actually holds funds.
   await sql()`insert into users (id, wallet, ip) values (${userId}, ${acct.address}, ${ip}) on conflict do nothing`;

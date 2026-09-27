@@ -66,7 +66,7 @@ export default async function Home() {
         <p className="rise relative text-xs uppercase tracking-[0.35em] text-gold" style={d(0.1)}>
           Refunds for AI agent purchases
         </p>
-        <h1 className="relative mt-7 max-w-6xl text-[11vw] font-semibold leading-[0.95] tracking-[-0.045em] sm:text-6xl md:text-[4.6rem]">
+        <h1 className="relative mt-7 max-w-6xl text-balance text-[10vw] font-semibold leading-[0.95] tracking-[-0.045em] sm:text-5xl md:text-6xl xl:text-[4.6rem]">
           <span className="rise block" style={d(0.2)}>
             Let an AI agent shop for you.
           </span>
@@ -83,7 +83,7 @@ export default async function Home() {
             Set up your agent <span className="inline-block transition group-hover:translate-x-1">→</span>
           </Link>
           <Link href="/try" className="rounded-full border hair bg-bg/40 px-7 py-3.5 text-sm font-medium backdrop-blur transition hover:border-fg/30">
-            Watch a 1 minute demo
+            Watch demo
           </Link>
         </div>
 

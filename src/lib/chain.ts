@@ -125,3 +125,50 @@ export function claimPayoutFrom(logs: Log[]): number {
   }
   return 0;
 }
+
+/** PRD H4: every pool number is computed from onchain events, nothing from the database. */
+export async function poolLedger() {
+  const fromBlock = BigInt(process.env.HALO_POOL_BLOCK || "0");
+  const events = await publicClient.getContractEvents({ address: poolAddress(), abi: haloAbi, fromBlock });
+  let volume = 0n, fees = 0n, claimsPaid = 0n, recovered = 0n, funded = 0n;
+  let approvals = 0, covered = 0, claims = 0;
+  const approvedAmount = new Map<string, bigint>();
+  for (const e of events as unknown as { eventName: string; args: Record<string, unknown> }[]) {
+    const a = e.args;
+    switch (e.eventName) {
+      case "ApprovalRecorded":
+        approvals++;
+        approvedAmount.set(a.approvalId as string, a.amount as bigint);
+        break;
+      case "FeePaid":
+        covered++;
+        fees += a.fee as bigint;
+        volume += approvedAmount.get(a.approvalId as string) ?? 0n;
+        break;
+      case "ClaimResolved":
+        claims++;
+        claimsPaid += a.payout as bigint;
+        break;
+      case "BondSlashed":
+        recovered += a.amount as bigint;
+        break;
+      case "PoolFunded":
+        funded += a.amount as bigint;
+        break;
+    }
+  }
+  const f = fromUnits;
+  const net = f(claimsPaid) - f(recovered);
+  return {
+    approvals,
+    covered,
+    claims,
+    volume: f(volume),
+    fees: f(fees),
+    claimsPaid: f(claimsPaid),
+    recovered: f(recovered),
+    funded: f(funded),
+    lossRatio: fees > 0n ? net / f(fees) : 0,
+    events: events.length,
+  };
+}

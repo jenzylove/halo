@@ -86,7 +86,7 @@ export default function Try() {
           value={instruction}
           onChange={(e) => setInstruction(e.target.value)}
           rows={2}
-          className="w-full resize-none border hair bg-transparent p-4 text-lg outline-none focus:border-fg"
+          className="w-full resize-none border hair bg-transparent p-4 text-lg outline-none focus:border-gold"
         />
         <div className="mt-3 flex flex-wrap gap-2">
           {PRESETS.map((p) => (
@@ -98,7 +98,7 @@ export default function Try() {
         <button
           onClick={compile}
           disabled={!!busy}
-          className="mt-5 w-full rounded-full bg-fg py-3 text-sm font-medium text-bg disabled:opacity-40"
+          className="mt-5 w-full rounded-full bg-gold py-3 text-sm font-semibold text-bg shadow-[0_0_30px_-8px_var(--gold)] disabled:opacity-40"
         >
           Write the mandate
         </button>
@@ -127,14 +127,14 @@ export default function Try() {
             ))}
           </dl>
           {!locked ? (
-            <button onClick={confirm} disabled={!!busy} className="mt-6 w-full rounded-full bg-fg py-3 text-sm font-medium text-bg disabled:opacity-40">
+            <button onClick={confirm} disabled={!!busy} className="mt-6 w-full rounded-full bg-gold py-3 text-sm font-semibold text-bg shadow-[0_0_30px_-8px_var(--gold)] disabled:opacity-40">
               Confirm and lock it onchain
             </button>
           ) : (
             <button
               onClick={() => stream("Agent is shopping", `/api/mandates/${draft.id}/run`)}
               disabled={!!busy}
-              className="mt-6 w-full rounded-full bg-fg py-3 text-sm font-medium text-bg disabled:opacity-40"
+              className="mt-6 w-full rounded-full bg-gold py-3 text-sm font-semibold text-bg shadow-[0_0_30px_-8px_var(--gold)] disabled:opacity-40"
             >
               Let the agent shop
             </button>

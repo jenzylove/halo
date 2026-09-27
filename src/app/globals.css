@@ -1,27 +1,17 @@
 @import "tailwindcss";
 
+/* Halo is a dark brand: ink canvas, one luminous gold, mint for money coming back, red for declines. */
 :root {
-  --bg: #fafaf9;
-  --fg: #0c0c0c;
-  --muted: #6b6b6b;
-  --line: #e4e4e2;
-  --soft: #f1f1ef;
-  --ok: #15803d;
-  --bad: #b91c1c;
-  --warn: #a16207;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #0b0b0b;
-    --fg: #f2f2f0;
-    --muted: #8f8f8c;
-    --line: #242424;
-    --soft: #151515;
-    --ok: #4ade80;
-    --bad: #f87171;
-    --warn: #facc15;
-  }
+  --bg: #07070a;
+  --fg: #f4f1ea;
+  --muted: #8b8880;
+  --line: rgba(244, 241, 234, 0.09);
+  --soft: #111115;
+  --gold: #f2c14e;
+  --gold-2: #ffe29a;
+  --ok: #5eead4;
+  --bad: #ff6b6b;
+  --warn: #fbbf24;
 }
 
 @theme inline {
@@ -30,11 +20,14 @@
   --color-muted: var(--muted);
   --color-line: var(--line);
   --color-soft: var(--soft);
+  --color-gold: var(--gold);
+  --color-gold-2: var(--gold-2);
   --color-ok: var(--ok);
   --color-bad: var(--bad);
   --color-warn: var(--warn);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+  --font-serif: var(--font-serif);
 }
 
 html,
@@ -53,4 +46,291 @@ a {
 
 .hair {
   border-color: var(--line);
+}
+
+::selection {
+  background: var(--gold);
+  color: var(--bg);
+}
+
+/* ---------- the halo ---------- */
+
+.halo-ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 9999px;
+  background: conic-gradient(from 0deg, transparent 0deg, var(--gold) 40deg, var(--gold-2) 70deg, transparent 150deg, transparent 360deg);
+  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 2px), #000 calc(100% - 1px));
+  mask: radial-gradient(farthest-side, transparent calc(100% - 2px), #000 calc(100% - 1px));
+  animation: spin 9s linear infinite;
+}
+
+.halo-ring.slow {
+  animation-duration: 22s;
+  animation-direction: reverse;
+  opacity: 0.35;
+}
+
+.halo-track {
+  position: absolute;
+  inset: 0;
+  border-radius: 9999px;
+  border: 1px solid rgba(242, 193, 78, 0.14);
+}
+
+.halo-glow {
+  position: absolute;
+  inset: 12%;
+  border-radius: 9999px;
+  background: radial-gradient(circle, rgba(242, 193, 78, 0.28), rgba(242, 193, 78, 0.06) 45%, transparent 70%);
+  filter: blur(30px);
+  animation: breathe 6s ease-in-out infinite;
+}
+
+.orbit {
+  position: absolute;
+  inset: 0;
+  animation: spin var(--dur, 14s) linear infinite;
+  animation-delay: var(--delay, 0s);
+}
+
+.orbit > i {
+  position: absolute;
+  left: 50%;
+  top: -4px;
+  width: 8px;
+  height: 8px;
+  margin-left: -4px;
+  border-radius: 9999px;
+  background: var(--c, var(--ok));
+  box-shadow: 0 0 14px var(--c, var(--ok));
+}
+
+.grain {
+  background-image: radial-gradient(rgba(255, 255, 255, 0.035) 1px, transparent 1px);
+  background-size: 3px 3px;
+}
+
+.gold-text {
+  background: linear-gradient(100deg, var(--gold) 10%, var(--gold-2) 45%, var(--gold) 80%);
+  background-size: 200% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: sheen 6s ease-in-out infinite;
+}
+
+/* ---------- motion ---------- */
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes breathe {
+  0%,
+  100% {
+    opacity: 0.7;
+    transform: scale(0.96);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.04);
+  }
+}
+
+@keyframes sheen {
+  0%,
+  100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(0.45em);
+    filter: blur(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+    filter: none;
+  }
+}
+
+.rise {
+  opacity: 0;
+  animation: rise 0.9s cubic-bezier(0.2, 0.7, 0.2, 1) forwards;
+  animation-delay: var(--d, 0s);
+}
+
+@keyframes marquee {
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+.marquee {
+  animation: marquee 48s linear infinite;
+}
+
+.marquee:hover {
+  animation-play-state: paused;
+}
+
+@keyframes blink {
+  50% {
+    opacity: 0;
+  }
+}
+
+.caret::after {
+  content: "";
+  display: inline-block;
+  width: 0.5ch;
+  height: 1em;
+  margin-left: 2px;
+  vertical-align: -0.15em;
+  background: var(--gold);
+  animation: blink 1s steps(1) infinite;
+}
+
+@keyframes ping {
+  75%,
+  100% {
+    transform: scale(2.4);
+    opacity: 0;
+  }
+}
+
+.live-dot {
+  position: relative;
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 9999px;
+  background: var(--ok);
+}
+
+.live-dot::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 9999px;
+  background: var(--ok);
+  animation: ping 1.8s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+
+/* Reveal on scroll: .reveal becomes .in when it enters the viewport */
+.reveal {
+  opacity: 0;
+  transform: translateY(24px);
+  transition:
+    opacity 0.9s cubic-bezier(0.2, 0.7, 0.2, 1),
+    transform 0.9s cubic-bezier(0.2, 0.7, 0.2, 1);
+  transition-delay: var(--d, 0s);
+}
+
+.reveal.in,
+.in .reveal {
+  opacity: 1;
+  transform: none;
+}
+
+/* scene internals only animate once their scene is in view */
+.scene .beat {
+  opacity: 0;
+  transform: translateY(8px);
+  transition:
+    opacity 0.6s ease,
+    transform 0.6s ease;
+  transition-delay: var(--d, 0s);
+}
+
+.scene.in .beat {
+  opacity: 1;
+  transform: none;
+}
+
+.scene .strike {
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.7s ease;
+  transition-delay: var(--d, 0s);
+}
+
+.scene.in .strike {
+  transform: scaleX(1);
+}
+
+@keyframes coin {
+  0% {
+    opacity: 0;
+    transform: translate(0, 0) scale(0.6);
+  }
+  20% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-90px, -70px) scale(1);
+  }
+}
+
+.scene.in .coin {
+  animation: coin 2.4s ease-out infinite;
+  animation-delay: var(--d, 0s);
+}
+
+@keyframes packet {
+  0% {
+    left: 0%;
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  90% {
+    opacity: 1;
+  }
+  100% {
+    left: 100%;
+    opacity: 0;
+  }
+}
+
+.scene.in .packet {
+  animation: packet 2.2s ease-in-out infinite;
+}
+
+.bar {
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 1.2s cubic-bezier(0.2, 0.7, 0.2, 1);
+  transition-delay: var(--d, 0s);
+}
+
+.in .bar {
+  transform: scaleX(var(--w, 1));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+  .rise,
+  .reveal,
+  .scene .beat {
+    opacity: 1 !important;
+    transform: none !important;
+    filter: none !important;
+  }
 }

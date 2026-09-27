@@ -7,6 +7,7 @@ export const metadata = { title: "Halo docs" };
 
 const POOL = "0x80eD325076DF4eA062e60F74137Bc2c39A796387";
 const OPERATOR = "0xf46b12f057df9c2E369eD26e583F6A12C74DD85e";
+const OWNER = "0x877f050372C1E7d6254Ef59870D454A455b11897";
 const USDC = "0x036CbD53842c5426634e7929541eC2318f3dCF7e";
 const REPO = "https://github.com/jenzylove/halo";
 const addr = (a: string) => `https://sepolia.basescan.org/address/${a}`;
@@ -267,6 +268,7 @@ result.steps    // every decision and transaction, with reasons`}</Code>
           rows={[
             ["HaloPool", <a key="p" className="font-mono text-gold underline" href={addr(POOL)} target="_blank" rel="noreferrer">{POOL}</a>],
             ["Operator (CDP wallet)", <a key="o" className="font-mono underline" href={addr(OPERATOR)} target="_blank" rel="noreferrer">{OPERATOR}</a>],
+            ["Owner (cold key, offline)", <a key="w" className="font-mono underline" href={addr(OWNER)} target="_blank" rel="noreferrer">{OWNER}</a>],
             ["USDC (Circle test)", <a key="u" className="font-mono underline" href={addr(USDC)} target="_blank" rel="noreferrer">{USDC}</a>],
             ...MERCHANTS.map((m) => [
               `${m.name}${m.verified ? " (verified, bonded)" : " (unverified)"}`,
@@ -353,6 +355,10 @@ result.steps    // every decision and transaction, with reasons`}</Code>
             <span className="text-fg">Agent wallets are server wallets.</span> Halo&apos;s server can sign for them, which is what
             lets the agent act without you. On this testnet demo that is the point; link your own wallet as owner so refunds and
             withdrawals land with you.
+          </li>
+          <li>
+            <span className="text-fg">The contract owner key is offline.</span> Changing the operator, the limits or pausing the pool
+            needs a cold key that never touches the servers. The server keys can only operate within the contract&apos;s rules.
           </li>
           <li>
             <span className="text-fg">SERV cannot move money on its own.</span> Budget, quantity, expiry, caps and leverage are

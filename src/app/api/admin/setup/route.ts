@@ -70,6 +70,15 @@ export async function POST(req: Request) {
     }
   }
 
+  if (step === "close" && approvalId) {
+    const { fileClaim, readApproval } = await import("@/lib/chain");
+    const a = await readApproval(approvalId);
+    if (a.status === 2) await fileClaim(approvalId, sha256("purchase never completed") as `0x${string}`);
+    const tx = await resolveClaim(approvalId, a.fee, sha256("closed: purchase never completed, fee refunded") as `0x${string}`, false);
+    await sql()`update purchases set status = 'failed' where id = ${approvalId}`;
+    return Response.json({ tx });
+  }
+
   if (step === "balances" && address) return Response.json(await balances(address));
 
   return Response.json({ error: "unknown step" }, { status: 400 });

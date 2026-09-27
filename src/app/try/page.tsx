@@ -58,6 +58,8 @@ function plain(r: Reason): string {
       return `Too expensive. ${r.text}`;
     case "quantity":
       return `Wrong quantity. ${r.text}`;
+    case "fund_full":
+      return r.text;
     default:
       return r.text;
   }

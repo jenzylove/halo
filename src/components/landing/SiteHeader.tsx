@@ -6,7 +6,8 @@ import { useEffect, useState } from "react";
 import { HaloLogo } from "./HaloMark";
 
 const LINKS = [
-  ["/try", "Try it"],
+  ["/start", "Get started"],
+  ["/try", "Demo"],
   ["/dashboard", "My purchases"],
   ["/pool", "Refund fund"],
   ["/docs", "Docs"],
@@ -31,12 +32,12 @@ export function SiteHeader() {
         </Link>
         <div className="flex items-center gap-4 sm:gap-6">
           {LINKS.map(([href, label]) => (
-            <Link key={href} href={href} className={`transition-colors hover:text-fg ${path === href ? "text-fg" : "text-muted"} ${href === "/dashboard" ? "hidden sm:inline" : ""}`}>
+            <Link key={href} href={href} className={`transition-colors hover:text-fg ${path === href ? "text-fg" : "text-muted"} ${href === "/dashboard" || href === "/pool" ? "hidden md:inline" : ""}`}>
               {label}
             </Link>
           ))}
-          <Link href="/try" className="hidden rounded-full bg-gold px-4 py-1.5 font-medium text-bg shadow-[0_0_24px_-4px_var(--gold)] transition hover:brightness-110 sm:inline">
-            Try it free
+          <Link href="/start" className="hidden rounded-full bg-gold px-4 py-1.5 font-medium text-bg shadow-[0_0_24px_-4px_var(--gold)] transition hover:brightness-110 sm:inline">
+            Set up your agent
           </Link>
         </div>
       </nav>

@@ -80,7 +80,7 @@ export function WalletPanel({ compact = false }: { compact?: boolean }) {
       const data = encodeFunctionData({ abi: erc20Abi, functionName: "transfer", args: [s.agent as Hex, parseUnits(amount || "0", 6)] });
       const tx = (await p.request({ method: "eth_sendTransaction", params: [{ from, to: USDC, data }] })) as string;
       setNote({ text: `Sent ${amount} USDC to your agent.`, tx });
-      setTimeout(load, 4000);
+      setS((prev) => (prev ? { ...prev, agentUsdc: prev.agentUsdc + Number(amount || 0) } : prev));
     } catch (e) {
       setNote({ text: (e as { message?: string }).message ?? String(e), bad: true });
     } finally {
@@ -94,8 +94,10 @@ export function WalletPanel({ compact = false }: { compact?: boolean }) {
     try {
       const r = await fetch("/api/owner/withdraw", { method: "POST" }).then((r) => r.json());
       if (r.error) setNote({ text: r.error, bad: true });
-      else setNote({ text: `Withdrew ${r.amount.toFixed(2)} USDC to ${short(r.to)}.`, tx: r.tx });
-      await load();
+      else {
+        setNote({ text: `Withdrew ${r.amount.toFixed(2)} USDC to ${short(r.to)}. Add the USDC token in your wallet to see it.`, tx: r.tx });
+        setS((prev) => (prev ? { ...prev, agentUsdc: 0 } : prev));
+      }
     } finally {
       setBusy(null);
     }

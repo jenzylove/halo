@@ -7,9 +7,10 @@ const COLS: [string, [string, string][]][] = [
   [
     "Product",
     [
-      ["Try it live", "/try"],
-      ["Your dashboard", "/dashboard"],
-      ["The pool", "/pool"],
+      ["Get started", "/start"],
+      ["Try the demo", "/try"],
+      ["My purchases", "/dashboard"],
+      ["Refund fund", "/pool"],
     ],
   ],
   [
@@ -38,19 +39,11 @@ export function SiteFooter() {
       <div className="relative mx-auto grid max-w-6xl gap-12 px-4 pb-10 pt-20 md:grid-cols-[1.4fr_1fr_1fr_1fr]">
         <div>
           <p className="max-w-xs text-2xl font-semibold leading-snug tracking-tight">
-            Protection for the money your agent spends.
+            Let an AI agent shop for you. <span className="font-serif font-normal italic text-gold">Wrong buy? Money back.</span>
           </p>
-          <p className="mt-4 flex items-center gap-2 text-sm text-muted">
-            <span className="live-dot" /> Pool live on Base Sepolia
-          </p>
-          <a
-            href={`https://sepolia.basescan.org/address/${POOL}`}
-            target="_blank"
-            rel="noreferrer"
-            className="mt-2 block font-mono text-xs text-muted underline decoration-dotted hover:text-fg"
-          >
-            {POOL.slice(0, 10)}…{POOL.slice(-6)}
-          </a>
+          <Link href="/start" className="mt-5 inline-block text-sm text-gold underline decoration-gold/40 underline-offset-4 hover:decoration-gold">
+            Set up your agent →
+          </Link>
         </div>
         {COLS.map(([title, links]) => (
           <div key={title}>

@@ -244,7 +244,21 @@ export async function purchase(userId: string, mandateId: Hex, url: string, onSt
 
   // 4. Record the approval and activate coverage by paying the fee (B7, C4).
   const amount = BigInt(req.maxAmountRequired);
-  const approvalTx = await chain.recordApproval(approvalId, mandateId, req.payTo as Hex, amount);
+  let approvalTx: Hex;
+  try {
+    approvalTx = await chain.recordApproval(approvalId, mandateId, req.payTo as Hex, amount);
+  } catch (e) {
+    // Full reserve: the fund only protects what it already holds. If it is full, nothing is bought unprotected.
+    const full = /OverLeverage|estimate gas|revert/i.test(String(e));
+    await sql()`update purchases set status = 'decline' where id = ${approvalId}`;
+    await onStep({
+      kind: "decision",
+      merchant: offer.merchant.name,
+      decision: "decline",
+      reasons: [{ code: "fund_full", text: full ? "The refund fund is full right now, so Halo won't let your agent buy without protection. Try again later." : `Could not protect this purchase (${String(e).slice(0, 80)}).` }],
+    });
+    return { status: "decline" as const, approvalId };
+  }
   await onStep({ kind: "tx", stage: "allowed", label: "Halo allowed this purchase", tx: approvalTx });
   const fee = await chain.feeFor(amount);
   const feeTx = await chain.payFee(userId, approvalId, fee);

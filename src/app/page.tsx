@@ -79,12 +79,12 @@ export default async function Home() {
           pays, and refunds you if a store gets it wrong.
         </p>
         <div className="rise relative mt-9 flex flex-col items-center gap-3 sm:flex-row" style={d(1)}>
-          <Link href="/try" className="group rounded-full bg-gold px-7 py-3.5 text-sm font-semibold text-bg shadow-[0_0_40px_-6px_var(--gold)] transition hover:brightness-110">
-            Give an agent a shopping job <span className="inline-block transition group-hover:translate-x-1">→</span>
+          <Link href="/start" className="group rounded-full bg-gold px-7 py-3.5 text-sm font-semibold text-bg shadow-[0_0_40px_-6px_var(--gold)] transition hover:brightness-110">
+            Set up your agent <span className="inline-block transition group-hover:translate-x-1">→</span>
           </Link>
-          <a href="#how" className="rounded-full border hair bg-bg/40 px-7 py-3.5 text-sm font-medium backdrop-blur transition hover:border-fg/30">
-            How it works
-          </a>
+          <Link href="/try" className="rounded-full border hair bg-bg/40 px-7 py-3.5 text-sm font-medium backdrop-blur transition hover:border-fg/30">
+            Watch a 1 minute demo
+          </Link>
         </div>
 
       </section>

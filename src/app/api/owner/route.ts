@@ -32,6 +32,10 @@ export async function POST(req: Request) {
   const agent = await userAccount(uid);
   const ok = await verifyMessage({ address, message: message(agent.address, uid, issued), signature });
   if (!ok) return Response.json({ error: "signature does not match this wallet" }, { status: 401 });
+  // Ownership locks once set: a session (or anyone holding it) cannot move refunds to a different wallet.
+  const current = await ownerOf(uid);
+  if (current && current.toLowerCase() !== address.toLowerCase())
+    return Response.json({ error: `This agent is already owned by ${current.slice(0, 6)}…${current.slice(-4)}. Ownership cannot be reassigned.` }, { status: 409 });
   await linkOwner(uid, address);
   return Response.json({ owner: address.toLowerCase(), agent: agent.address });
 }

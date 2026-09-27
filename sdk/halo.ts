@@ -3,7 +3,7 @@
 // mandate, pays only if it fits, and pays the user back if the delivery is wrong.
 
 export interface HaloOptions {
-  user: string; // the user's Halo id (shown on halo's Docs page)
+  key: string; // the user's Halo API key (shown on the Docs page)
   mandateId: string; // a confirmed mandate
   base?: string; // Halo deployment, defaults to the public one
 }
@@ -19,7 +19,7 @@ export interface HaloResult {
 export async function haloFetch(url: string, opts: HaloOptions): Promise<HaloResult> {
   const res = await fetch(`${opts.base ?? "https://halo-nine-chi.vercel.app"}/api/pay`, {
     method: "POST",
-    headers: { "content-type": "application/json", "x-halo-user": opts.user },
+    headers: { "content-type": "application/json", "x-halo-key": opts.key },
     body: JSON.stringify({ mandateId: opts.mandateId, url }),
   });
   return (await res.json()) as HaloResult;

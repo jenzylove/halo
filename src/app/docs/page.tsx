@@ -169,7 +169,7 @@ export default function Docs() {
         </P>
 
         <H3>3. From Claude, ChatGPT or any MCP client</H3>
-        <P>Your personal MCP server (tied to this browser&apos;s session and agent wallet):</P>
+        <P>Your personal MCP server. The key in it controls your agent: keep it private like a password.</P>
         <McpLink variant="url" />
         <P>Claude Code:</P>
         <McpLink variant="claude" />
@@ -183,7 +183,7 @@ export default function Docs() {
         <Code>{`import { haloFetch } from "./sdk/halo";
 
 const result = await haloFetch("https://shop.example/buy?item=42", {
-  user: "<halo user id>",
+  key: "hk_…",                // your Halo API key (Docs page)
   mandateId: "0x…",            // from halo_create_mandate + halo_confirm_mandate
 });
 
@@ -318,13 +318,13 @@ result.steps    // every decision and transaction, with reasons`}</Code>
             [<C key="1">POST /api/mandates</C>, "Compile an instruction into terms (or a question)"],
             [<C key="2">POST /api/mandates/:id/confirm</C>, "Sign and lock the mandate onchain (streams steps)"],
             [<C key="3">POST /api/mandates/:id/run</C>, "Hosted agent shops under the mandate (streams steps)"],
-            [<C key="4">POST /api/pay</C>, "SDK entry: check, pay and guarantee one x402 URL"],
+            [<C key="4">POST /api/pay</C>, "SDK entry (header x-halo-key): check, pay and guarantee one x402 URL"],
             [<C key="5">POST /api/purchases/:id/claim</C>, "File a claim with evidence (streams steps)"],
             [<C key="6">GET/POST /api/owner</C>, "Owner link, agent balance; POST links a wallet by signature"],
             [<C key="7">POST /api/owner/withdraw</C>, "Send the agent balance to the owner, gasless"],
             [<C key="8">GET /api/records/:id</C>, "Full SERV reasoning records for a mandate, purchase or claim"],
             [<C key="9">GET /api/pool</C>, "Pool numbers from chain events"],
-            [<C key="10">/api/mcp?u=…</C>, "MCP server (streamable HTTP)"],
+            [<C key="10">/api/mcp?k=…</C>, "MCP server (streamable HTTP), identified by your API key"],
           ]}
         />
         <Table

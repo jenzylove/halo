@@ -357,3 +357,22 @@ export async function linkOwner(userId: string, owner: Hex) {
   await sql()`insert into owners (user_id, owner) values (${userId}, ${owner.toLowerCase()})
     on conflict (user_id) do update set owner = excluded.owner, linked_at = now()`;
 }
+
+// ---------- api keys (MCP and SDK identity, never the browser session) ----------
+
+export async function apiKeyFor(userId: string): Promise<string> {
+  await migrate();
+  const [row] = (await sql()`select key from api_keys where user_id = ${userId}`) as { key: string }[];
+  if (row) return row.key;
+  const key = `hk_${randomBytes(24).toString("hex")}`;
+  await sql()`insert into api_keys (key, user_id) values (${key}, ${userId}) on conflict (user_id) do nothing`;
+  const [again] = (await sql()`select key from api_keys where user_id = ${userId}`) as { key: string }[];
+  return again.key;
+}
+
+export async function userForKey(key: string | null): Promise<string | null> {
+  if (!key || !/^hk_[0-9a-f]{48}$/.test(key)) return null;
+  await migrate();
+  const [row] = (await sql()`select user_id from api_keys where key = ${key}`) as { user_id: string }[];
+  return row?.user_id ?? null;
+}

@@ -1,12 +1,12 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { WebStandardStreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js";
 import { z } from "zod";
-import { confirmMandate, draftMandate, ensureUser, manualClaim, purchase, runAgent, type Step } from "@/lib/halo";
+import { confirmMandate, draftMandate, ensureUser, manualClaim, purchase, runAgent, userForKey, type Step } from "@/lib/halo";
 import { migrate, sql } from "@/lib/db";
 
 export const maxDuration = 300;
 
-// PRD H5: Halo as an MCP server. Add https://<host>/api/mcp?u=<your id> to Claude or ChatGPT.
+// PRD H5: Halo as an MCP server. Add https://<host>/api/mcp?k=<your API key> to Claude or ChatGPT.
 
 const text = (t: string) => ({ content: [{ type: "text" as const, text: t }] });
 
@@ -115,8 +115,8 @@ function build(uid: string, origin: string) {
 
 async function handle(req: Request) {
   const url = new URL(req.url);
-  const uid = (url.searchParams.get("u") || "").replace(/[^a-zA-Z0-9]/g, "").slice(0, 32);
-  if (!uid) return Response.json({ error: "add ?u=<your Halo id> to the MCP URL" }, { status: 401 });
+  const uid = await userForKey(url.searchParams.get("k"));
+  if (!uid) return Response.json({ error: "add ?k=<your Halo API key> to the MCP URL (from the Docs page)" }, { status: 401 });
   const server = build(uid, url.origin);
   const transport = new WebStandardStreamableHTTPServerTransport({ sessionIdGenerator: undefined, enableJsonResponse: true });
   await server.connect(transport);

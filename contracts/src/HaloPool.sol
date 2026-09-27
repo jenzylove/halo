@@ -310,6 +310,9 @@ contract HaloPool is Ownable, Pausable, ReentrancyGuard, EIP712 {
 
         if (payout > 0) {
             if (poolBalance() < payout) revert InsufficientPool();
+            // Money paid back returns to the mandate budget, so the agent can try another seller.
+            Mandate storage m = mandates[a.mandateId];
+            m.spent -= payout < m.spent ? payout : m.spent;
             paidInWindow[user] += payout;
             usdc.safeTransfer(user, payout);
         }

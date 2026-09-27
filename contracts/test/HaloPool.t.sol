@@ -337,6 +337,20 @@ contract HaloPoolTest is Test {
         assertEq(pool.poolBalance(), poolBefore);
     }
 
+    function test_claim_payoutRestoresBudget() public {
+        _season();
+        _mandate("m1", 10 * D);
+        _approve("a1", "m1", 9 * D);
+        _payFeeAuth("a1");
+        vm.prank(operator);
+        pool.fileClaim("a1", bytes32(0));
+        vm.prank(operator);
+        pool.resolveClaim("a1", 9 * D, bytes32(0), true);
+        (,,, uint128 spent,) = pool.mandates("m1");
+        assertEq(spent, 0);
+        _approve("a2", "m1", 9 * D); // agent can buy from another seller
+    }
+
     function test_claim_rejectedPaysNothing() public {
         _covered("a1", 40 * D);
         vm.prank(user);

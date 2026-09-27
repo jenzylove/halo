@@ -74,6 +74,22 @@ export async function servJson<T>(opts: ServOptions): Promise<ServCall<T>> {
   }
 
   const started = Date.now();
+  // SERV intermittently returns an unusable draft or rejects its own max_tokens; one retry clears it.
+  for (let attempt = 0; ; attempt++) {
+    try {
+      const result = await attemptOnce<T>(opts, tools, started);
+      if (result.data !== null || result.refusal || attempt >= 1) return result;
+    } catch (e) {
+      if (attempt >= 1) throw e;
+    }
+  }
+}
+
+async function attemptOnce<T>(
+  opts: ServOptions,
+  tools: OpenAI.Chat.Completions.ChatCompletionTool[],
+  started: number,
+): Promise<ServCall<T>> {
   const { data: completion, response } = await servClient()
     .chat.completions.create(
       {
@@ -99,8 +115,8 @@ export async function servJson<T>(opts: ServOptions): Promise<ServCall<T>> {
   } catch {
     data = null;
   }
-  // PromptGuard answers with an endpoint shaped refusal instead of calling the model.
-  const blocked = Boolean(opts.guard && !opts.raw && (refusal || data === null));
+  // PromptGuard answers with an endpoint shaped refusal instead of calling the model. An empty draft is not a block.
+  const blocked = Boolean(opts.guard && !opts.raw && refusal);
 
   const base = {
     kind: opts.kind,

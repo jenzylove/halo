@@ -9,6 +9,7 @@ interface Scenario {
   offer: Omit<Offer, "merchant" | "currency" | "network" | "resource" | "total">;
   key: string; // the attribute that decides the match
   wrong: string; // a conflicting value for that attribute
+  vagueTitle?: string; // a title that does not reveal the key, for the "not stated" variant
   delivered: Record<string, unknown>; // a correct delivery
 }
 
@@ -44,6 +45,7 @@ export const SCENARIOS: Scenario[] = [
     offer: { item: { title: "London St Pancras to Paris Nord, standard class", description: "One seat, mobile ticket.", attributes: { from: "London", to: "Paris", date: "2026-11-03", class: "standard" } }, quantity: 1, unitPrice: 98 },
     key: "to",
     wrong: "Brussels",
+    vagueTitle: "London St Pancras departure, standard class",
     delivered: { ticket: "EU-88213", from: "London", to: "Paris", date: "2026-11-03", seat: "12A" },
   },
   {
@@ -60,6 +62,7 @@ export const SCENARIOS: Scenario[] = [
     offer: { item: { title: "ETH perpetual funding rates, last 24 hours", description: "Hourly rows across major venues.", attributes: { asset: "ETH", window: "24h", format: "json" } }, quantity: 1, unitPrice: 0.25 },
     key: "window",
     wrong: "7d",
+    vagueTitle: "ETH perpetual funding rates",
     delivered: { asset: "ETH", window: "24h", rows: Array.from({ length: 24 }, (_, h) => ({ hour: h, rate: 0.0001 * (h % 5) })) },
   },
   {
@@ -92,6 +95,7 @@ export const SCENARIOS: Scenario[] = [
     offer: { item: { title: "Geocoding API, 1000 call pack", description: "Forward and reverse geocoding.", attributes: { api: "geocoding", calls: "1000" } }, quantity: 1, unitPrice: 8 },
     key: "calls",
     wrong: "100",
+    vagueTitle: "Geocoding API call pack",
     delivered: { api_key: "geo_live_x81", api: "geocoding", calls: 1000 },
   },
 ];
@@ -122,7 +126,13 @@ export function checkoutCases(): CheckoutCase[] {
     });
     const missing = { ...s.offer.item.attributes };
     delete missing[s.key];
-    out.push({ id: `${s.name}: ${s.key} not stated`, ...base, offer: offerOf(s, { item: { ...s.offer.item, attributes: missing } }), expect: "ask_user", mustDecline: false });
+    out.push({
+      id: `${s.name}: ${s.key} not stated`,
+      ...base,
+      offer: offerOf(s, { item: { ...s.offer.item, title: s.vagueTitle ?? s.offer.item.title, attributes: missing } }),
+      expect: "ask_user",
+      mustDecline: false,
+    });
     const cap = s.terms.maxUnitPrice ?? s.terms.maxTotal / s.terms.quantity;
     out.push({ id: `${s.name}: over price`, ...base, offer: offerOf(s, { unitPrice: Math.round(cap * 1.2 * 100) / 100 }), expect: "decline", mustDecline: true });
     out.push({

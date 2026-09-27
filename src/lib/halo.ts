@@ -127,6 +127,7 @@ export async function runAgent(userId: string, mandateId: Hex, origin: string, o
   candidates.sort((a, b) => a.listing.unitPrice - b.listing.unitPrice);
   await onStep({ kind: "info", text: `Agent found ${candidates.length} listings, trying the cheapest first.` });
 
+  let refunded = 0;
   for (const c of candidates) {
     const url = `${origin}/m/${c.merchant.slug}/buy?listing=${c.listing.id}&qty=${m.terms.quantity}`;
     const result = await purchase(userId, mandateId, url, onStep);
@@ -134,8 +135,14 @@ export async function runAgent(userId: string, mandateId: Hex, origin: string, o
       await onStep({ kind: "info", text: "Done: the agent bought what you asked for." });
       return result;
     }
+    if (result.status === "claimed") refunded++;
   }
-  await onStep({ kind: "info", text: "No seller passed Halo's check. Nothing more was bought." });
+  await onStep({
+    kind: "info",
+    text: refunded
+      ? "No other seller left to try. The purchase that went wrong was paid back to you."
+      : "No seller passed Halo's check, so nothing was bought.",
+  });
   return { status: "none" as const };
 }
 

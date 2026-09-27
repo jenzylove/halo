@@ -157,7 +157,9 @@ async function spentOn(mandateId: string): Promise<number> {
 /** The demo shopping agent: finds listings that fit the mandate, tries the cheapest first, and lets Halo decide. */
 export async function runAgent(userId: string, mandateId: Hex, origin: string, onStep: OnStep) {
   const m = await getMandate(mandateId);
-  if (!m?.tx) throw new Error("mandate not confirmed");
+  // A mandate can only be spent by the session (or API key) that wrote it.
+  if (!m || m.user_id !== userId) throw new Error("unknown mandate");
+  if (!m.tx) throw new Error("mandate not confirmed");
   const words = m.terms.item.toLowerCase().split(/\W+/).filter((w) => w.length > 3);
   const candidates: { merchant: MerchantDef; listing: Listing }[] = [];
   for (const merchant of MERCHANTS)
@@ -191,7 +193,8 @@ export async function runAgent(userId: string, mandateId: Hex, origin: string, o
 
 export async function purchase(userId: string, mandateId: Hex, url: string, onStep: OnStep) {
   const m = await getMandate(mandateId);
-  if (!m?.tx) throw new Error("mandate not confirmed");
+  if (!m || m.user_id !== userId) throw new Error("unknown mandate");
+  if (!m.tx) throw new Error("mandate not confirmed");
   const u = new URL(url);
   const slug = u.pathname.split("/")[2];
 

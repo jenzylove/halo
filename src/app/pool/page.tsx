@@ -1,6 +1,6 @@
 import { poolAddress, poolLedger, poolStats } from "@/lib/chain";
 
-export const revalidate = 15;
+export const dynamic = "force-dynamic";
 
 // PRD H4: the pool, computed from onchain events.
 export default async function Pool() {

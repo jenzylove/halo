@@ -1,6 +1,6 @@
 import { poolAddress, poolLedger, poolStats } from "@/lib/chain";
 
-export const revalidate = 15;
+export const dynamic = "force-dynamic";
 
 export async function GET() {
   const [stats, ledger] = await Promise.all([poolStats(), poolLedger()]);

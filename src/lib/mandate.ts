@@ -8,10 +8,12 @@ The mandate is a contract: the agent may only buy what it allows, so never inven
 
 Rules:
 - status "clarify" when a purchase cannot be bounded: no budget at all (neither a per item price nor a total), or the item is too vague to recognise a match. Put one short question in "question".
-- quantity: the number of items. Default 1 only if the instruction clearly implies one.
+- quantity: the number of purchasable units (tickets, seats, books, pairs of shoes, packs, bookings). Default 1 only if the instruction clearly implies one.
+  A number that describes the size of one product is a constraint, not the quantity: "1000 API calls" is 1 pack with constraint calls=1000; "2 nights in Lisbon" is 1 booking with constraint nights=2; "24 hours of data" is 1 dataset with constraint window=24h.
 - max_unit_price: the per item cap in USD if given, else null. max_total: the overall cap in USD if given, else null.
 - category: ticket, digital_good, data, subscription or other.
-- constraints: every concrete requirement that a delivered item must satisfy (date as YYYY-MM-DD resolved against today's date, time, venue, event, format, size, colour, language, seller). Use short lowercase names.
+- constraints: every concrete requirement that a delivered item must satisfy (event, date, time, venue, route, format, size, colour, language, window, calls, nights). Use short lowercase names.
+  Resolve named calendar days to YYYY-MM-DD against today's date. Keep relative windows as stated (window=24h), never convert them into dates.
 - merchant_rule: "any" only if the person explicitly allows unknown sellers, else "verified_only".
 - valid_hours: how long the agent may shop; default 24.
 - summary: one plain sentence the person will confirm, starting with "Your agent may spend up to". Include the item, quantity, limits and constraints.`;
@@ -91,7 +93,9 @@ export async function compileMandate(instruction: string, opts: { raw?: boolean;
   if (r.status === "clarify") return { status: "clarify", question: r.question, record: call.record };
 
   // Hard rules in code (PRD principle 1): a mandate must be bounded.
-  const qty = Math.max(1, Math.floor(r.quantity || 1));
+  let qty = Math.max(1, Math.floor(r.quantity || 1));
+  // A quantity that just repeats a size constraint (calls=1000 with quantity 1000) describes one unit of that size.
+  if (qty > 1 && r.constraints.some((c) => c.value.replace(/[^0-9]/g, "") === String(qty) && !/date|time/i.test(c.name))) qty = 1;
   const fromUnit = r.max_unit_price != null ? r.max_unit_price * qty : Infinity;
   const fromTotal = r.max_total ?? Infinity;
   const maxTotal = Math.min(fromUnit, fromTotal);

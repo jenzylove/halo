@@ -78,10 +78,11 @@ export async function servJson<T>(opts: ServOptions): Promise<ServCall<T>> {
   for (let attempt = 0; ; attempt++) {
     try {
       const result = await attemptOnce<T>(opts, tools, started);
-      if (result.data !== null || result.refusal || attempt >= 1) return result;
+      if (result.data !== null || result.refusal || attempt >= 2) return result;
     } catch (e) {
-      if (attempt >= 1) throw e;
+      if (attempt >= 2) throw e;
     }
+    await new Promise((r) => setTimeout(r, 800 * (attempt + 1)));
   }
 }
 
@@ -99,6 +100,8 @@ async function attemptOnce<T>(
           { role: "user", content: opts.input },
         ],
         response_format: { type: "json_schema", json_schema: { name: opts.name, strict: true, schema: opts.schema } },
+        // An explicit cap stops SERV from sizing max_tokens past the model's limit (a SERV bug seen in testing).
+        max_completion_tokens: 4000,
         ...(tools.length ? { tools } : {}),
       },
       opts.raw ? { headers: { "x-openserv-disable-braid": "true" } } : undefined,

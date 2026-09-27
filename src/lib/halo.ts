@@ -11,7 +11,7 @@ import { canonical, compileMandate } from "./mandate";
 import { MERCHANTS, merchantBySlug, verifiedNames, type Listing, type MerchantDef } from "./merchants";
 import { agentkitSendUsdc } from "./agentkit";
 import { recycle } from "./recycle";
-import { transferFromAgent } from "./relay";
+import { agentBalance, transferFromAgent } from "./relay";
 import { sha256 } from "./serv";
 import type { MandateTerms, Offer, Reason, Verdict } from "./types";
 import { asViemAccount, serverAccount, userAccount } from "./wallets";
@@ -244,6 +244,19 @@ export async function purchase(userId: string, mandateId: Hex, url: string, onSt
 
   // 4. Record the approval and activate coverage by paying the fee (B7, C4).
   const amount = BigInt(req.maxAmountRequired);
+  // Check the agent can actually pay (purchase plus fee) before recording anything onchain.
+  const needed = amount + (await chain.feeFor(amount));
+  const have = await agentBalance(userId);
+  if (have < needed) {
+    await sql()`update purchases set status = 'decline' where id = ${approvalId}`;
+    await onStep({
+      kind: "decision",
+      merchant: offer.merchant.name,
+      decision: "decline",
+      reasons: [{ code: "agent_funds", text: `Your agent has ${chain.fromUnits(have).toFixed(2)} USDC but needs ${chain.fromUnits(needed).toFixed(2)}. Top it up on the Get started page, then try again.` }],
+    });
+    return { status: "decline" as const, approvalId };
+  }
   let approvalTx: Hex;
   try {
     approvalTx = await chain.recordApproval(approvalId, mandateId, req.payTo as Hex, amount);

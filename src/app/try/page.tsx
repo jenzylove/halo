@@ -214,21 +214,20 @@ export default function Try() {
           <p className="mx-auto mt-4 max-w-lg text-center text-muted">
             Pick a job. Your agent will shop real test stores and pay with real test USDC. Halo watches every step.
           </p>
-          <div className="mt-10 grid gap-4 sm:grid-cols-2">
+          <div className="mt-10 divide-y divide-line border-y hair">
             {JOBS.map((j) => (
               <button
                 key={j.title}
                 onClick={() => pick(j.ask)}
                 disabled={!!busy}
-                className="group rounded-2xl border hair bg-soft/50 p-6 text-left transition hover:border-gold/60 hover:bg-soft disabled:opacity-50"
+                className="group flex w-full items-center justify-between gap-6 py-6 text-left transition disabled:opacity-50"
               >
-                <span className="text-3xl">{j.icon}</span>
-                <p className="mt-4 text-xl font-semibold">{j.title}</p>
-                <p className="mt-2 text-fg/85">“{j.ask}”</p>
-                <p className="mt-4 text-sm text-muted">{j.twist}</p>
-                <p className="mt-6 text-sm text-gold">
-                  Give this job <span className="inline-block transition group-hover:translate-x-1">→</span>
-                </p>
+                <span>
+                  <span className="text-xl font-semibold transition group-hover:text-gold">{j.title}</span>
+                  <span className="mt-1 block text-fg/80">“{j.ask}”</span>
+                  <span className="mt-2 block text-sm text-muted">{j.twist}</span>
+                </span>
+                <span className="shrink-0 text-gold transition group-hover:translate-x-1">→</span>
               </button>
             ))}
           </div>
@@ -265,9 +264,9 @@ export default function Try() {
           <p className="mx-auto mt-4 max-w-lg text-center text-muted">
             Halo turned your request into rules. Your agent can only buy what fits them. Nobody can change them later, not even us.
           </p>
-          <div className="mt-10 rounded-2xl border hair bg-soft/50 p-6 sm:p-8">
+          <div className="mt-10">
             <p className="text-sm text-muted">You asked: “{draft.ask}”</p>
-            <dl className="mt-6 divide-y divide-line">
+            <dl className="mt-4 divide-y divide-line border-y hair">
               <Rule k="Buy" v={draft.terms.item} />
               <Rule k="How many" v={String(draft.terms.quantity)} />
               {draft.terms.maxUnitPrice != null && <Rule k="Max price each" v={`$${draft.terms.maxUnitPrice.toFixed(2)}`} />}
@@ -306,7 +305,7 @@ export default function Try() {
             ))}
           </ul>
 
-          <div className="mt-10 space-y-4">
+          <div className="mt-10 divide-y divide-line border-y hair">
             {stores.map((s, i) => (
               <StoreCard key={i} s={s} />
             ))}
@@ -316,7 +315,7 @@ export default function Try() {
           {error && <p className="mt-8 text-center text-sm text-bad">{error}</p>}
 
           {done && (
-            <div className="rise mt-10 rounded-2xl border border-gold/40 bg-gold/5 p-6 sm:p-8">
+            <div className="rise mt-10 border-t border-gold/40 pt-8">
               <p className="text-xs uppercase tracking-[0.25em] text-gold">Your receipt</p>
               <div className="mt-5 grid grid-cols-3 gap-4 text-center">
                 <Money k="Paid to stores" v={spent} />
@@ -389,7 +388,7 @@ function Rule({ k, v }: { k: string; v: string }) {
 function Money({ k, v, tone = "", plain = false }: { k: string; v: number; tone?: string; plain?: boolean }) {
   return (
     <div>
-      <p className={`font-display text-3xl font-semibold ${tone}`}>{plain ? v : `$${v.toFixed(2)}`}</p>
+      <p className={`text-3xl font-semibold ${tone}`}>{plain ? v : `$${v.toFixed(2)}`}</p>
       <p className="mt-1 text-xs text-muted">{k}</p>
     </div>
   );
@@ -398,7 +397,7 @@ function Money({ k, v, tone = "", plain = false }: { k: string; v: number; tone?
 function StoreCard({ s }: { s: Store }) {
   const st = STATUS[s.status];
   return (
-    <div className="rise rounded-2xl border hair bg-soft/40 p-5 sm:p-6">
+    <div className="rise py-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <p className="text-lg font-semibold">{s.name}</p>

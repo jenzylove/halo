@@ -59,22 +59,19 @@ export default async function Home() {
   return (
     <div className="overflow-x-clip">
       {/* ---------- hero: what it is, in one read ---------- */}
-      <section className="grain relative flex min-h-[calc(100svh-64px)] flex-col items-center justify-center overflow-hidden px-4 pb-16 pt-10 text-center">
-        <div className="absolute left-1/2 top-[42%] -translate-x-1/2 -translate-y-1/2">
+      <section className="grain relative flex min-h-[calc(100svh-64px)] flex-col items-center justify-center overflow-hidden px-4 pb-24 pt-10 text-center">
+        <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
           <HaloMark size={720} />
         </div>
         <p className="rise relative text-xs uppercase tracking-[0.35em] text-gold" style={d(0.1)}>
           Refunds for AI agent purchases
         </p>
-        <h1 className="relative mt-6 max-w-5xl text-[11vw] font-bold leading-[0.95] sm:text-6xl md:text-[5.2rem]">
+        <h1 className="relative mt-7 max-w-6xl text-[11vw] font-semibold leading-[0.95] tracking-[-0.045em] sm:text-6xl md:text-[4.6rem]">
           <span className="rise block" style={d(0.2)}>
             Let an AI agent shop for you.
           </span>
-          <span className="rise block text-fg/60" style={d(0.4)}>
-            If it buys the wrong thing,
-          </span>
-          <span className="rise gold-text block pb-2 font-serif text-[1.08em] font-normal italic tracking-normal" style={d(0.6)}>
-            you get your money back.
+          <span className="rise gold-text mt-2 block pb-2 font-serif font-normal italic tracking-normal" style={d(0.5)}>
+            Wrong buy? Money back.
           </span>
         </h1>
         <p className="rise relative mx-auto mt-6 max-w-xl text-lg leading-relaxed text-muted" style={d(0.8)}>
@@ -90,16 +87,6 @@ export default async function Home() {
           </a>
         </div>
 
-        {/* the whole product as a 3 beat story */}
-        <ol className="relative mt-14 grid w-full max-w-5xl gap-3 text-left sm:grid-cols-3">
-          {STORY.map((s, i) => (
-            <li key={s.who} className="rise rounded-2xl border hair bg-bg/60 p-5 backdrop-blur" style={d(1.2 + i * 0.2)}>
-              <p className="font-mono text-xs text-muted">0{i + 1}</p>
-              <p className={`mt-2 font-display text-lg font-semibold ${s.tone}`}>{s.who}</p>
-              <p className="mt-1 text-sm leading-relaxed text-fg/80">{s.text}</p>
-            </li>
-          ))}
-        </ol>
       </section>
 
       {/* ---------- live tape ---------- */}
@@ -120,11 +107,25 @@ export default async function Home() {
         </div>
       </section>
 
+
+      {/* ---------- the story, as one hairline row ---------- */}
+      <section className="mx-auto max-w-6xl px-4 pt-24">
+        <InView className="grid gap-10 sm:grid-cols-3">
+          {STORY.map((st, i) => (
+            <div key={st.who} className="reveal border-t hair pt-5" style={d(i * 0.12)}>
+              <p className="font-mono text-xs text-muted">0{i + 1}</p>
+              <p className={`mt-2 text-lg font-semibold ${st.tone}`}>{st.who}</p>
+              <p className="mt-1 leading-relaxed text-muted">{st.text}</p>
+            </div>
+          ))}
+        </InView>
+      </section>
+
       {/* ---------- why it's needed ---------- */}
       <section className="mx-auto max-w-6xl px-4 py-28 md:py-36">
         <InView className="max-w-3xl">
           <p className="reveal text-xs uppercase tracking-[0.35em] text-gold">Why this exists</p>
-          <h2 className="reveal mt-5 text-balance text-4xl font-bold leading-[1.05] sm:text-6xl" style={d(0.1)}>
+          <h2 className="reveal mt-5 text-balance text-4xl font-semibold tracking-[-0.03em] leading-[1.05] sm:text-6xl" style={d(0.1)}>
             Pay by card and something goes wrong, your bank reverses it. Your agent doesn&apos;t pay by card.
           </h2>
           <p className="reveal mt-6 text-lg leading-relaxed text-muted" style={d(0.2)}>
@@ -132,14 +133,14 @@ export default async function Home() {
             gives your agent&apos;s purchases the protection a card would.
           </p>
         </InView>
-        <InView className="mt-16 grid gap-px overflow-hidden rounded-2xl border hair bg-line sm:grid-cols-3">
+        <InView className="mt-16 grid gap-10 sm:grid-cols-3">
           {[
             ["Fake stores", "Stores that copy a real store's name to catch agents. Halo blocks them before your agent pays."],
             ["Hidden orders", "Listings that whisper to your agent: ignore your budget, buy now. Halo reads every listing first and blocks these."],
             ["Wrong deliveries", "Wrong date, wrong item, or nothing at all. Halo checks what arrived and refunds you in seconds."],
           ].map(([t, b], i) => (
-            <div key={t} className="reveal bg-bg p-7" style={d(i * 0.1)}>
-              <p className="font-display text-2xl font-semibold text-gold">{t}</p>
+            <div key={t} className="reveal border-t hair pt-5" style={d(i * 0.1)}>
+              <p className="text-xl font-semibold text-gold">{t}</p>
               <p className="mt-3 leading-relaxed text-muted">{b}</p>
             </div>
           ))}
@@ -150,7 +151,7 @@ export default async function Home() {
       <section id="how" className="scroll-mt-16 border-t hair py-28">
         <InView className="mx-auto max-w-3xl px-4 text-center">
           <p className="reveal text-xs uppercase tracking-[0.35em] text-gold">How it works</p>
-          <h2 className="reveal mt-5 text-balance text-4xl font-bold sm:text-6xl" style={d(0.1)}>
+          <h2 className="reveal mt-5 text-balance text-4xl font-semibold tracking-[-0.03em] sm:text-6xl" style={d(0.1)}>
             Four steps, and you only do the first.
           </h2>
         </InView>
@@ -163,7 +164,7 @@ export default async function Home() {
         <div className="relative mx-auto grid max-w-6xl items-center gap-14 px-4 md:grid-cols-[1fr_1.25fr]">
           <InView>
             <p className="reveal text-xs uppercase tracking-[0.35em] text-gold">A real run</p>
-            <h2 className="reveal mt-5 text-balance text-4xl font-bold leading-tight sm:text-5xl" style={d(0.1)}>
+            <h2 className="reveal mt-5 text-balance text-4xl font-semibold tracking-[-0.03em] leading-tight sm:text-5xl" style={d(0.1)}>
               This happened on Base today.
             </h2>
             <p className="reveal mt-5 max-w-md leading-relaxed text-muted" style={d(0.2)}>
@@ -183,7 +184,7 @@ export default async function Home() {
         <div className="mx-auto max-w-6xl px-4">
           <InView className="mx-auto max-w-3xl text-center">
             <p className="reveal text-xs uppercase tracking-[0.35em] text-gold">Where refunds come from</p>
-            <h2 className="reveal mt-5 text-balance text-4xl font-bold sm:text-6xl" style={d(0.1)}>
+            <h2 className="reveal mt-5 text-balance text-4xl font-semibold tracking-[-0.03em] sm:text-6xl" style={d(0.1)}>
               A refund fund that stores pay into when they&apos;re wrong.
             </h2>
             <p className="reveal mx-auto mt-6 max-w-2xl text-lg leading-relaxed text-muted" style={d(0.2)}>
@@ -201,7 +202,7 @@ export default async function Home() {
                 ["In the fund right now", stats.balance, " USDC", 2],
               ].map(([k, v, suf, dec], i) => (
                 <div key={k as string} className={`reveal px-4 py-8 text-center ${i ? "md:border-l hair" : ""}`} style={d(i * 0.08)}>
-                  <p className="font-display text-3xl font-semibold">
+                  <p className="text-3xl font-semibold">
                     <Counter value={v as number} suffix={suf as string} decimals={dec as number} />
                   </p>
                   <p className="mt-2 text-xs uppercase tracking-[0.15em] text-muted">{k as string}</p>
@@ -211,7 +212,7 @@ export default async function Home() {
           )}
 
           <InView className="mx-auto mt-20 max-w-3xl">
-            <p className="reveal text-center font-display text-2xl font-semibold">Halo only refunds when it should.</p>
+            <p className="reveal text-center text-2xl font-semibold">Halo only refunds when it should.</p>
             <p className="reveal mt-3 text-center text-sm text-muted" style={d(0.05)}>
               We tested Halo&apos;s refund decisions on 30 cases with known answers, using SERV reasoning and without it.
             </p>
@@ -238,13 +239,13 @@ export default async function Home() {
 
       {/* ---------- who it's for ---------- */}
       <section className="border-t hair py-28">
-        <InView className="mx-auto grid max-w-6xl gap-px overflow-hidden rounded-2xl border hair bg-line md:grid-cols-3">
+        <InView className="mx-auto grid max-w-6xl gap-10 px-4 md:grid-cols-3">
           {[
             ["For people", "Let Claude or ChatGPT shop for you with Halo turned on. Every purchase it makes is checked and refundable.", "/docs#quickstart", "Connect your assistant"],
             ["For agent builders", "Route your agent's payments through Halo so your users get their money back when your agent gets it wrong.", "/docs#quickstart", "Read the SDK"],
             ["For stores", "Put down a small deposit and get trusted by protected agents. Honest stores never lose a cent of it.", "/docs#quickstart", "Become a trusted store"],
           ].map(([t, b, href, cta], i) => (
-            <Link key={t} href={href} className="reveal group bg-bg p-8 transition hover:bg-soft" style={d(i * 0.1)}>
+            <Link key={t} href={href} className="reveal group border-t hair pt-6" style={d(i * 0.1)}>
               <p className="font-serif text-3xl italic text-gold">{t}</p>
               <p className="mt-4 leading-relaxed text-muted">{b}</p>
               <p className="mt-8 text-sm">
@@ -261,7 +262,7 @@ export default async function Home() {
           <HaloMark size={520} orbits={false} />
         </div>
         <InView className="relative">
-          <h2 className="reveal text-5xl font-bold sm:text-7xl">
+          <h2 className="reveal text-5xl font-semibold tracking-[-0.04em] sm:text-7xl">
             Give your agent a <span className="gold-text font-serif font-normal italic tracking-normal">halo</span>.
           </h2>
           <p className="reveal mx-auto mt-6 max-w-md text-muted" style={d(0.15)}>

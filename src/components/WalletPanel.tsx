@@ -104,7 +104,7 @@ export function WalletPanel({ compact = false }: { compact?: boolean }) {
   if (!s) return null;
 
   return (
-    <div className={`rounded-2xl border hair bg-soft/60 ${compact ? "p-4" : "p-6"}`}>
+    <div className={`border-y hair ${compact ? "py-4" : "py-6"}`}>
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div className="space-y-1 text-sm">
           <p className="text-xs uppercase tracking-[0.2em] text-muted">Your agent</p>

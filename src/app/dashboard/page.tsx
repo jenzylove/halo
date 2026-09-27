@@ -37,13 +37,13 @@ interface Me {
 const scan = (tx: string) => `https://sepolia.basescan.org/tx/${tx}`;
 
 const STATUS: Record<string, string> = {
-  ok: "Covered, delivered",
-  delivered: "Covered, delivered",
-  covered: "Covered",
-  approved: "Approved",
-  refunded: "Paid back",
-  decline: "Declined",
-  ask_user: "Needs you",
+  ok: "Protected · delivered",
+  delivered: "Protected · delivered",
+  covered: "Protected",
+  approved: "Allowed",
+  refunded: "Refunded",
+  decline: "Blocked",
+  ask_user: "Needs your OK",
 };
 
 export default function Dashboard() {
@@ -67,7 +67,7 @@ export default function Dashboard() {
   }
 
   async function claim(id: string) {
-    const evidence = prompt("What went wrong?", "The tickets are not what I asked for.");
+    const evidence = prompt("What went wrong with this purchase?", "The tickets are not what I asked for.");
     if (!evidence) return;
     setBusy(id);
     setClaimSteps((prev) => ({ ...prev, [id]: [] }));
@@ -83,7 +83,7 @@ export default function Dashboard() {
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-16">
-      <h1 className="text-center text-4xl font-bold tracking-tight">Your agent&apos;s purchases</h1>
+      <h1 className="text-center text-4xl font-bold">My purchases</h1>
       <p className="mt-3 text-center text-sm text-muted">
         Agent wallet{" "}
         {me.wallet ? (
@@ -101,7 +101,7 @@ export default function Dashboard() {
 
       {me.purchases.length === 0 ? (
         <p className="mt-16 text-center text-muted">
-          Nothing yet. <Link href="/try" className="underline">Give your agent a job</Link>.
+          Nothing yet. <Link href="/try" className="underline">Give your agent a shopping job</Link>.
         </p>
       ) : (
         <ul className="mt-12 divide-y divide-line border-y hair">
@@ -112,12 +112,12 @@ export default function Dashboard() {
                   <p className="font-medium">{p.offer.item.title}</p>
                   <p className="text-sm text-muted">
                     {p.offer.merchant.name} · {Number(p.amount).toFixed(2)} USDC
-                    {p.fee ? ` · fee ${Number(p.fee).toFixed(2)}` : ""}
+                    {p.fee ? ` · ${Number(p.fee).toFixed(2)} to the refund fund` : ""}
                   </p>
                 </div>
                 <span className="text-sm">
                   {STATUS[p.status] ?? p.status}
-                  {p.payout && Number(p.payout) > 0 ? ` · ${Number(p.payout).toFixed(2)} USDC back` : ""}
+                  {p.payout && Number(p.payout) > 0 ? ` · ${Number(p.payout).toFixed(2)} USDC refunded` : ""}
                 </span>
               </div>
               <ul className="mt-2 text-sm text-muted">
@@ -127,24 +127,24 @@ export default function Dashboard() {
               </ul>
               <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs">
                 {[
-                  ["approval", p.approval_tx],
-                  ["fee", p.fee_tx],
-                  ["payment", p.payment_tx],
-                  ["delivery anchor", p.link_tx],
-                  ["payout", p.resolve_tx],
+                  ["allowed", p.approval_tx],
+                  ["protected", p.fee_tx],
+                  ["paid", p.payment_tx],
+                  ["delivery recorded", p.link_tx],
+                  ["refund", p.resolve_tx],
                 ]
                   .filter(([, tx]) => tx)
                   .map(([k, tx]) => (
                     <a key={k} href={scan(tx!)} target="_blank" rel="noreferrer" className="text-muted underline">
-                      {k} tx
+                      {k} ↗
                     </a>
                   ))}
                 <button onClick={() => toggle(p.id)} className="text-muted underline">
-                  {open === p.id ? "hide" : "show"} SERV reasoning
+                  {open === p.id ? "hide" : "why Halo decided"}
                 </button>
                 {["ok", "delivered"].includes(p.status) && (
                   <button onClick={() => claim(p.id)} disabled={busy === p.id} className="font-medium underline">
-                    Something&apos;s wrong
+                    Ask for a refund
                   </button>
                 )}
               </div>

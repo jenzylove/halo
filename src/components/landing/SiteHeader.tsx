@@ -7,8 +7,8 @@ import { HaloLogo } from "./HaloMark";
 
 const LINKS = [
   ["/try", "Try it"],
-  ["/dashboard", "Dashboard"],
-  ["/pool", "Pool"],
+  ["/dashboard", "My purchases"],
+  ["/pool", "Refund fund"],
   ["/docs", "Docs"],
 ] as const;
 
@@ -36,7 +36,7 @@ export function SiteHeader() {
             </Link>
           ))}
           <Link href="/try" className="hidden rounded-full bg-gold px-4 py-1.5 font-medium text-bg shadow-[0_0_24px_-4px_var(--gold)] transition hover:brightness-110 sm:inline">
-            Launch
+            Try it free
           </Link>
         </div>
       </nav>

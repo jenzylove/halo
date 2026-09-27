@@ -13,28 +13,35 @@ export default async function Pool() {
   }
   const leverage = data.balance > 0 ? data.openCoverage / data.balance : 0;
   const rows: [string, string, string][] = [
-    ["Pool capital", `${data.balance.toFixed(2)} USDC`, "USDC held by the contract, minus merchant bonds"],
-    ["Open coverage", `${data.openCoverage.toFixed(2)} USDC`, "Purchases still inside their claim window"],
-    ["Leverage", `${leverage.toFixed(2)}x of 20x`, "The contract refuses approvals past 20x pool capital"],
-    ["Room to cover", `${data.capacity.toFixed(2)} USDC`, "New purchases the pool can still guarantee"],
-    ["Merchant bonds", `${data.bonds.toFixed(2)} USDC`, "Slashed back into the pool when a merchant is at fault"],
-    ["Covered volume", `${data.volume.toFixed(2)} USDC`, `${data.covered} purchases covered, ${data.approvals} approved`],
-    ["Fees in", `${data.fees.toFixed(2)} USDC`, "1% of every covered purchase, minimum 0.02"],
-    ["Paid back to users", `${data.claimsPaid.toFixed(2)} USDC`, `${data.claims} claims resolved`],
-    ["Recovered from merchants", `${data.recovered.toFixed(2)} USDC`, "Bond slashes on merchant fault verdicts"],
-    ["Net loss ratio", data.fees > 0 ? `${(data.lossRatio * 100).toFixed(1)}%` : "n/a", "(paid back minus recovered) divided by fees"],
+    ["In the fund", `${data.balance.toFixed(2)} USDC`, "Money available for refunds (store deposits are kept separately)"],
+    ["Store deposits", `${data.bonds.toFixed(2)} USDC`, "Trusted stores put these down; a store at fault pays the fund back from it"],
+    ["Purchases protected", `${data.covered}`, `${data.volume.toFixed(2)} USDC of agent purchases, each paying 1% in`],
+    ["Added by purchases", `${data.fees.toFixed(2)} USDC`, "1% of every protected purchase (at least 0.02)"],
+    ["Refunded to people", `${data.claimsPaid.toFixed(2)} USDC`, `${data.claims} refund decisions so far`],
+    ["Paid back by stores at fault", `${data.recovered.toFixed(2)} USDC`, "Taken from the deposit of the store that got it wrong"],
+    ["Still protected right now", `${data.openCoverage.toFixed(2)} USDC`, "Purchases that can still be refunded (7 day window)"],
+    ["Safety limit", `${leverage.toFixed(2)}x of 20x`, "The contract refuses new protection past 20x what is in the fund"],
   ];
+  const net = data.claimsPaid - data.recovered;
   return (
     <div className="mx-auto max-w-3xl px-4 py-16">
-      <h1 className="text-center text-4xl font-bold tracking-tight">The pool</h1>
-      <p className="mt-3 text-center text-sm text-muted">
-        Every number below is read from{" "}
-        <a className="font-mono underline" href={`https://sepolia.basescan.org/address/${data.address}`} target="_blank" rel="noreferrer">
-          HaloPool
-        </a>{" "}
-        events on Base Sepolia ({data.events} events).
+      <p className="text-center text-xs uppercase tracking-[0.35em] text-gold">The refund fund</p>
+      <h1 className="mt-4 text-balance text-center text-4xl font-bold sm:text-5xl">Where your refunds come from</h1>
+      <p className="mx-auto mt-6 max-w-2xl text-center text-lg leading-relaxed text-muted">
+        Every protected purchase adds 1% to this fund. So far it has refunded{" "}
+        <span className="text-ok">{data.claimsPaid.toFixed(2)} USDC</span> to people, and the stores at fault paid back{" "}
+        <span className="text-gold">{data.recovered.toFixed(2)} USDC</span> of it
+        {net <= 0.001 ? ", so refunds have cost the fund nothing." : `, so refunds have cost the fund ${net.toFixed(2)} USDC.`}
       </p>
-      <dl className="mt-12 divide-y divide-line border-y hair">
+      <p className="mt-4 text-center text-sm text-muted">
+        Read live from the{" "}
+        <a className="underline decoration-dotted" href={`https://sepolia.basescan.org/address/${data.address}`} target="_blank" rel="noreferrer">
+          HaloPool contract
+        </a>{" "}
+        on Base Sepolia ({data.events} events).
+      </p>
+      <h2 className="mt-14 text-sm uppercase tracking-[0.25em] text-muted">The details</h2>
+      <dl className="mt-4 divide-y divide-line border-y hair">
         {rows.map(([k, v, d]) => (
           <div key={k} className="grid grid-cols-1 gap-1 py-4 sm:grid-cols-3">
             <dt className="font-medium">{k}</dt>

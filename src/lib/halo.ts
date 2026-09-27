@@ -20,7 +20,7 @@ import { USDC } from "./x402server";
 
 export type Step =
   | { kind: "info"; text: string }
-  | { kind: "tx"; label: string; tx: string }
+  | { kind: "tx"; label: string; tx: string; stage?: "funded" | "rules" | "allowed" | "protected" | "paid" | "refund_opened" | "forwarded" | "refund_declined" }
   | { kind: "offer"; merchant: string; title: string; total: number }
   | { kind: "decision"; merchant: string; decision: string; reasons: Reason[] }
   | { kind: "delivered"; merchant: string; delivery: unknown }
@@ -69,7 +69,7 @@ export async function ensureUser(userId: string, onStep?: OnStep, ip = "unknown"
       transaction: { to: USDC.address as Hex, data, value: 0n },
     });
     await chain.publicClient.waitForTransactionReceipt({ hash: transactionHash as Hex });
-    await onStep?.({ kind: "tx", label: `Funded your agent wallet with ${STARTER_USDC} test USDC`, tx: transactionHash });
+    await onStep?.({ kind: "tx", stage: "funded", label: `Your agent got ${STARTER_USDC.toFixed(2)} test USDC to shop with`, tx: transactionHash });
   }
   // Only remember the user once the agent actually holds funds.
   await sql()`insert into users (id, wallet, ip) values (${userId}, ${acct.address}, ${ip}) on conflict do nothing`;
@@ -123,7 +123,7 @@ export async function confirmMandate(userId: string, id: Hex, onStep?: OnStep) {
   const { user, signature } = await chain.signMandate(userId, id, m.terms_hash as Hex, maxTotal, expiry);
   const tx = await chain.registerMandate(id, user, m.terms_hash as Hex, maxTotal, expiry, signature);
   await sql()`update mandates set tx = ${tx} where id = ${id}`;
-  await onStep?.({ kind: "tx", label: "Mandate locked onchain", tx });
+  await onStep?.({ kind: "tx", stage: "rules", label: "Your rules are saved on Base", tx });
   return tx;
 }
 
@@ -168,7 +168,7 @@ export async function runAgent(userId: string, mandateId: Hex, origin: string, o
       if (words.some((w) => text.includes(w))) candidates.push({ merchant, listing });
     }
   candidates.sort((a, b) => a.listing.unitPrice - b.listing.unitPrice);
-  await onStep({ kind: "info", text: `Agent found ${candidates.length} listings, trying the cheapest first.` });
+  await onStep({ kind: "info", text: `Your agent found ${candidates.length} stores selling this and tries the cheapest first.` });
 
   let refunded = 0;
   for (const c of candidates) {
@@ -232,10 +232,10 @@ export async function purchase(userId: string, mandateId: Hex, url: string, onSt
   // 4. Record the approval and activate coverage by paying the fee (B7, C4).
   const amount = BigInt(req.maxAmountRequired);
   const approvalTx = await chain.recordApproval(approvalId, mandateId, req.payTo as Hex, amount);
-  await onStep({ kind: "tx", label: "Approval recorded", tx: approvalTx });
+  await onStep({ kind: "tx", stage: "allowed", label: "Halo allowed this purchase", tx: approvalTx });
   const fee = await chain.feeFor(amount);
   const feeTx = await chain.payFee(userId, approvalId, fee);
-  await onStep({ kind: "tx", label: `Halo fee ${chain.fromUnits(fee).toFixed(2)} USDC paid, purchase covered`, tx: feeTx });
+  await onStep({ kind: "tx", stage: "protected", label: `Protected: ${chain.fromUnits(fee).toFixed(2)} USDC went into the refund fund`, tx: feeTx });
   await sql()`update purchases set status = 'covered', fee = ${chain.fromUnits(fee)}, approval_tx = ${approvalTx}, fee_tx = ${feeTx}
     where id = ${approvalId}`;
 
@@ -248,7 +248,7 @@ export async function purchase(userId: string, mandateId: Hex, url: string, onSt
   const body = (await paid.json()) as { delivery: unknown };
   const settlement = JSON.parse(Buffer.from(paid.headers.get("x-payment-response") || "", "base64").toString() || "{}");
   const paymentTx = settlement.transaction as Hex;
-  await onStep({ kind: "tx", label: `Paid ${offer.merchant.name} ${offer.total.toFixed(2)} USDC over x402`, tx: paymentTx });
+  await onStep({ kind: "tx", stage: "paid", label: `Paid ${offer.merchant.name} ${offer.total.toFixed(2)} USDC`, tx: paymentTx });
 
   // 6. Capture and anchor the delivery (C3).
   const deliveryText = canonical(body.delivery);
@@ -320,7 +320,7 @@ export async function manualClaim(userId: string, approvalId: Hex, evidence: str
 
 async function settleClaim(userId: string, approvalId: Hex, filedBy: string, evidence: string, verdict: Verdict, onStep: OnStep) {
   const fileTx = await chain.fileClaim(approvalId, sha256(evidence) as Hex);
-  await onStep({ kind: "tx", label: "Claim filed", tx: fileTx });
+  await onStep({ kind: "tx", stage: "refund_opened", label: "Refund opened", tx: fileTx });
   const verdictHash = sha256(canonical({ ...verdict, records: verdict.records.map((r) => r.hash) })) as Hex;
   const resolveTx = await chain.resolveClaim(approvalId, chain.toUnits(verdict.payout), verdictHash, verdict.merchantFault);
   const receipt = await chain.publicClient.getTransactionReceipt({ hash: resolveTx });
@@ -338,12 +338,12 @@ async function settleClaim(userId: string, approvalId: Hex, filedBy: string, evi
     if (owner) {
       try {
         const fwd = await transferFromAgent(userId, owner, chain.toUnits(paidOut));
-        await onStep({ kind: "tx", label: `Forwarded ${paidOut.toFixed(2)} USDC to your wallet ${owner.slice(0, 6)}…${owner.slice(-4)}`, tx: fwd });
+        await onStep({ kind: "tx", stage: "forwarded", label: `Sent ${paidOut.toFixed(2)} USDC on to your wallet ${owner.slice(0, 6)}…${owner.slice(-4)}`, tx: fwd });
       } catch (e) {
         await onStep({ kind: "info", text: `Refund is in your agent wallet; forwarding to your wallet failed (${String(e).slice(0, 80)}).` });
       }
     }
-  } else await onStep({ kind: "tx", label: "Claim resolved, not covered", tx: resolveTx });
+  } else await onStep({ kind: "tx", stage: "refund_declined", label: "No refund: the delivery matched your rules", tx: resolveTx });
   return { status: receipt.status, payout: paidOut, resolveTx };
 }
 

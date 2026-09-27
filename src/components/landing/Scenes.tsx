@@ -25,12 +25,12 @@ function Row({ k, v, delay }: { k: string; v: string; delay: number }) {
 const SCENES: { n: string; title: string; body: string; visual: ReactNode }[] = [
   {
     n: "01",
-    title: "Say what you want. It becomes a contract.",
-    body: "SERV turns your words into a mandate: the item, how many, the price ceiling, every detail that has to match. You confirm it in plain words, your agent wallet signs it, and it is locked on Base before a single cent moves. Nobody can rewrite it afterwards, including us.",
+    title: "Tell your agent what to buy.",
+    body: "Say it the way you would to a person. Halo turns it into clear rules: what to buy, how many, the most it can spend, and details like the date. You approve them once. They are saved on Base, so nobody can change them later, not even us.",
     visual: (
       <Panel>
         <p className="beat mb-3 text-xs uppercase tracking-[0.2em] text-muted" style={d(0)}>
-          Mandate
+          Your rules
         </p>
         <Row k="item" v="Neon Harbor tickets" delay={0.15} />
         <Row k="quantity" v="2" delay={0.3} />
@@ -42,21 +42,21 @@ const SCENES: { n: string; title: string; body: string; visual: ReactNode }[] = 
             <rect x="4" y="11" width="16" height="10" rx="2" />
             <path d="M8 11V7a4 4 0 0 1 8 0v4" />
           </svg>
-          signed and locked on Base
+          approved and saved, nobody can change them
         </div>
       </Panel>
     ),
   },
   {
     n: "02",
-    title: "Every checkout goes through Halo first.",
-    body: "Hard rules that no model can override: budget, quantity, expiry, lookalike names. Then SERV reads the listing the way a careful person would, and screens it for instructions planted for your agent. What passes is guaranteed. What fails never gets paid.",
+    title: "Halo checks every store before your agent pays.",
+    body: "Fake store names, listings that try to give your agent orders, prices over your limit: all blocked. Halo reads each listing the way a careful person would. Only purchases that fit your rules go through.",
     visual: (
       <Panel>
         {[
-          { name: "StageDo0r", price: "0.78", ok: false, note: "lookalike · injected listing" },
-          { name: "SeatSwap", price: "0.90", ok: true, note: "event ✓ date ✓ qty ✓" },
-          { name: "StageDoor", price: "0.95", ok: true, note: "event ✓ date ✓ qty ✓" },
+          { name: "StageDo0r", price: "0.78", ok: false, note: "fake store · gives your agent orders" },
+          { name: "SeatSwap", price: "0.90", ok: true, note: "matches your rules" },
+          { name: "StageDoor", price: "0.95", ok: true, note: "matches your rules" },
         ].map((m, i) => (
           <div key={m.name} className="beat relative flex items-center justify-between border-b hair py-3 last:border-0" style={d(0.2 + i * 0.35)}>
             <div>
@@ -66,7 +66,7 @@ const SCENES: { n: string; title: string; body: string; visual: ReactNode }[] = 
             <div className="flex items-center gap-3">
               <span className="text-muted">{m.price}</span>
               <span className={`rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase ${m.ok ? "border-ok/60 text-ok" : "border-bad/60 text-bad"}`}>
-                {m.ok ? "approved" : "declined"}
+                {m.ok ? "allowed" : "blocked"}
               </span>
             </div>
             {!m.ok && <span className="strike absolute left-0 right-40 top-1/2 h-px bg-bad/70" style={d(0.8)} />}
@@ -77,34 +77,34 @@ const SCENES: { n: string; title: string; body: string; visual: ReactNode }[] = 
   },
   {
     n: "03",
-    title: "Your agent pays. Halo covers it.",
-    body: "The agent pays the merchant over x402, straight from its own wallet. A 1% fee flows into an onchain pool and the guarantee switches on. Your agent never needs ETH: Halo relays the fee signature for it.",
+    title: "Your agent pays. The purchase is protected.",
+    body: "Your agent pays the store directly from its own wallet, in USDC. One percent goes into the refund fund, and from that moment the purchase is protected.",
     visual: (
       <Panel>
         <p className="beat text-muted" style={d(0)}>
-          GET /m/seatswap/buy?qty=2
+          SeatSwap asks for $0.90
         </p>
         <p className="beat mt-1 text-warn" style={d(0.3)}>
-          402 Payment Required · 0.90 USDC · base-sepolia
+          your agent approves the payment
         </p>
         <div className="beat relative my-6 h-px bg-line" style={d(0.6)}>
           <span className="packet absolute -top-[5px] h-[11px] w-[11px] rounded-full bg-gold shadow-[0_0_18px_var(--gold)]" />
-          <span className="absolute -top-5 left-0 text-[10px] text-muted">agent wallet</span>
-          <span className="absolute -top-5 right-0 text-[10px] text-muted">merchant</span>
+          <span className="absolute -top-5 left-0 text-[10px] text-muted">your agent</span>
+          <span className="absolute -top-5 right-0 text-[10px] text-muted">the store</span>
         </div>
         <p className="beat text-ok" style={d(0.9)}>
-          200 OK · settled onchain
+          paid $0.90 in USDC
         </p>
         <p className="beat mt-1 text-gold" style={d(1.2)}>
-          fee 0.02 → pool · purchase covered
+          protected · $0.02 into the refund fund
         </p>
       </Panel>
     ),
   },
   {
     n: "04",
-    title: "Wrong delivery? You are paid back in seconds.",
-    body: "The moment goods arrive, Halo compares them with your mandate. A mismatch becomes a claim with no forms and no waiting. The pool pays you in USDC. If the merchant was at fault, its bond pays the pool back.",
+    title: "Wrong delivery? Refunded in seconds.",
+    body: "When the goods arrive, Halo compares them with your rules. If they are wrong, you are refunded from the fund right away, with no forms. The store that got it wrong pays the fund back from its deposit.",
     visual: (
       <Panel>
         <div className="grid grid-cols-2 gap-3">
@@ -118,11 +118,11 @@ const SCENES: { n: string; title: string; body: string; visual: ReactNode }[] = 
           </div>
         </div>
         <p className="beat mt-4 text-muted" style={d(0.8)}>
-          verdict: not as mandated · merchant at fault
+          wrong date · the store is at fault
         </p>
         <div className="beat relative mt-4 flex items-center justify-between rounded-lg border border-ok/40 bg-ok/10 px-3 py-3 text-ok" style={d(1.1)}>
-          <span className="font-semibold">+0.90 USDC paid back</span>
-          <span className="text-[11px] opacity-80">bond slashed −0.90</span>
+          <span className="font-semibold">+$0.90 refunded to you</span>
+          <span className="text-[11px] opacity-80">store pays the fund back</span>
           <span className="coin absolute right-6 top-2 text-base" style={d(1.3)}>
             ●
           </span>

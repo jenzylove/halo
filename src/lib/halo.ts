@@ -26,9 +26,9 @@ export type Step =
 
 export type OnStep = (s: Step) => void | Promise<void>;
 
-const UNVERIFIED_CAP = 2; // USDC, PRD E3
+const UNVERIFIED_CAP = 0.2; // USDC, PRD E3
 const TREASURY = "halo-treasury";
-const STARTER_USDC = 12;
+const STARTER_USDC = 1.2;
 
 // ---------- users ----------
 

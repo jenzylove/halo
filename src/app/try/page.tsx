@@ -8,8 +8,8 @@ import { postStream } from "@/lib/sse";
 import type { MandateTerms } from "@/lib/types";
 
 const PRESETS = [
-  "Get me 2 tickets for Neon Harbor on Oct 12, under $5 each",
-  "Buy the last 24 hours of ETH funding rate data, max $0.50",
+  "Get me 2 tickets for Neon Harbor on Oct 12, under $0.50 each",
+  "Buy the last 24 hours of ETH funding rate data, max $0.10",
   "Buy me some concert tickets",
 ];
 
@@ -78,7 +78,7 @@ export default function Try() {
       <h1 className="text-center text-4xl font-bold tracking-tight">Give an agent a job</h1>
       <p className="mx-auto mt-3 max-w-lg text-center text-muted">
         This agent shops at four demo stores over x402 on Base Sepolia. One is a lookalike scam, one delivers the wrong date. Watch
-        Halo handle both.
+        Halo handle both. Prices are scaled down for testnet USDC.
       </p>
 
       <div className="mt-10">

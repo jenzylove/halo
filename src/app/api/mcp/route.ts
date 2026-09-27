@@ -45,7 +45,7 @@ function build(uid: string, origin: string) {
     {
       description:
         "Turn the user's shopping instruction into a Halo mandate (what the agent may buy, max price, constraints). Show the summary to the user and ask them to confirm before calling halo_confirm_mandate.",
-      inputSchema: { instruction: z.string().describe("The user's instruction, e.g. '2 tickets for Neon Harbor on Oct 12, under $5 each'") },
+      inputSchema: { instruction: z.string().describe("The user's instruction, e.g. '2 tickets for Neon Harbor on Oct 12, under $0.50 each'") },
     },
     async ({ instruction }) => {
       const r = await draftMandate(uid, instruction);

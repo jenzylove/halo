@@ -27,7 +27,7 @@ export default function Docs() {
         <p className="mt-4 text-sm text-muted">Claude Code:</p>
         <Code>{`claude mcp add --transport http halo "${mcp}"`}</Code>
         <p className="mt-4 text-sm text-muted">Then just ask:</p>
-        <Code>{`"Use Halo to get me 2 tickets for Neon Harbor on Oct 12, under $5 each."`}</Code>
+        <Code>{`"Use Halo to get me 2 tickets for Neon Harbor on Oct 12, under $0.50 each."`}</Code>
         <p className="mt-4 text-sm text-muted">
           Tools: <span className="font-mono">halo_create_mandate</span>, <span className="font-mono">halo_confirm_mandate</span>,{" "}
           <span className="font-mono">halo_pay</span>, <span className="font-mono">halo_shop</span>,{" "}

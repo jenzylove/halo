@@ -17,7 +17,7 @@ export interface HaloResult {
 }
 
 export async function haloFetch(url: string, opts: HaloOptions): Promise<HaloResult> {
-  const res = await fetch(`${opts.base ?? "https://halo-agent.vercel.app"}/api/pay`, {
+  const res = await fetch(`${opts.base ?? "https://halo-nine-chi.vercel.app"}/api/pay`, {
     method: "POST",
     headers: { "content-type": "application/json", "x-halo-user": opts.user },
     body: JSON.stringify({ mandateId: opts.mandateId, url }),

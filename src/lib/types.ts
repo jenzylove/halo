@@ -60,5 +60,6 @@ export interface Verdict {
   payout: number; // USDC, before contract caps
   merchantFault: boolean;
   reason: string;
+  review?: boolean; // Halo could not decide: the claim stays open for a human, it is never silently denied
   records: ReasoningRecord[];
 }

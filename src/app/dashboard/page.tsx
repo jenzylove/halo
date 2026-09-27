@@ -44,6 +44,8 @@ const STATUS: Record<string, string> = {
   refunded: "Refunded",
   decline: "Blocked",
   ask_user: "Needs your OK",
+  review: "Refund under review",
+  failed: "Payment failed · fee refunded",
 };
 
 export default function Dashboard() {

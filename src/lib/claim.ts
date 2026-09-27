@@ -84,7 +84,10 @@ export async function adjudicate(input: ClaimInput): Promise<Verdict> {
       type: "no_issue",
       payout: 0,
       merchantFault: false,
-      reason: call.blocked ? "PromptGuard blocked the claim material; sent to manual review." : "No verdict; sent to manual review.",
+      reason: call.blocked
+        ? "Halo could not judge this delivery automatically, so the refund request stays open for a person to review."
+        : "No automatic verdict, so the refund request stays open for a person to review.",
+      review: true,
       records: [call.record],
     };
   }

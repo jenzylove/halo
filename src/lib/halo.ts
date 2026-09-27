@@ -210,7 +210,9 @@ export async function purchase(userId: string, mandateId: Hex, url: string, onSt
   await onStep({ kind: "offer", merchant: offer.merchant.name, title: offer.item.title, total: offer.total });
   const registry = merchantBySlug(slug);
   const identity = await fetch(`${u.origin}/m/${slug}/.well-known/halo.json`).then((r) => (r.ok ? r.json() : null));
-  const merchantVerified = Boolean(registry?.verified && identity?.payTo?.toLowerCase() === req.payTo.toLowerCase());
+  // A merchant that asked to withdraw its deposit is no longer trusted: its bond may not outlive new claim windows.
+  const unbonding = await chain.isUnbonding(req.payTo as Hex);
+  const merchantVerified = Boolean(registry?.verified && !unbonding && identity?.payTo?.toLowerCase() === req.payTo.toLowerCase());
 
   // 3. Halo's checkout check.
   const check = await checkout(offer, {
@@ -244,7 +246,19 @@ export async function purchase(userId: string, mandateId: Hex, url: string, onSt
   const payer = createWalletClient({ account: asViemAccount(await userAccount(userId)), chain: baseSepolia, transport: http() });
   const header = await createPaymentHeader(payer as never, 1, req);
   const paid = await fetch(url, { headers: { "X-PAYMENT": header } });
-  if (!paid.ok) return { status: "error" as const, error: `payment failed: ${paid.status} ${await paid.text()}` };
+  if (!paid.ok) {
+    // The purchase never happened: refund the fee from the fund and close the protection.
+    const why = `payment failed: ${paid.status} ${(await paid.text()).slice(0, 120)}`;
+    try {
+      await chain.fileClaim(approvalId, sha256(why) as Hex);
+      const tx = await chain.resolveClaim(approvalId, fee, sha256(`fee refund: ${why}`) as Hex, false);
+      await onStep({ kind: "tx", stage: "refund_declined", label: `Payment didn't go through; your ${chain.fromUnits(fee).toFixed(2)} fee was refunded`, tx });
+      await sql()`update purchases set status = 'failed' where id = ${approvalId}`;
+    } catch {
+      await sql()`update purchases set status = 'review' where id = ${approvalId}`;
+    }
+    return { status: "error" as const, error: why };
+  }
   const body = (await paid.json()) as { delivery: unknown };
   const settlement = JSON.parse(Buffer.from(paid.headers.get("x-payment-response") || "", "base64").toString() || "{}");
   const paymentTx = settlement.transaction as Hex;
@@ -263,7 +277,7 @@ export async function purchase(userId: string, mandateId: Hex, url: string, onSt
   await saveRecords(approvalId, verdict.records);
   const shown = withoutRecords(verdict);
   await onStep({ kind: "verdict", merchant: offer.merchant.name, verdict: shown });
-  if (!verdict.covered) {
+  if (!verdict.covered && !verdict.review) {
     await sql()`update purchases set status = 'ok' where id = ${approvalId}`;
     return { status: "ok" as const, approvalId };
   }
@@ -303,7 +317,7 @@ export async function manualClaim(userId: string, approvalId: Hex, evidence: str
   }[];
   const p = rows[0];
   if (!p) throw new Error("unknown purchase");
-  if (!["ok", "delivered"].includes(p.status)) throw new Error(`purchase is ${p.status}, not claimable`);
+  if (!["ok", "delivered", "review"].includes(p.status)) throw new Error(`purchase is ${p.status}, not claimable`);
   const verdict = await adjudicate({
     terms: p.terms,
     offer: p.offer,
@@ -319,17 +333,35 @@ export async function manualClaim(userId: string, approvalId: Hex, evidence: str
 }
 
 async function settleClaim(userId: string, approvalId: Hex, filedBy: string, evidence: string, verdict: Verdict, onStep: OnStep) {
-  const fileTx = await chain.fileClaim(approvalId, sha256(evidence) as Hex);
-  await onStep({ kind: "tx", stage: "refund_opened", label: "Refund opened", tx: fileTx });
+  // Recoverable: a claim already open onchain (a retry, or one waiting for review) is not filed twice.
+  let fileTx: string | null = null;
+  if ((await chain.readApproval(approvalId)).status !== 3) {
+    fileTx = await chain.fileClaim(approvalId, sha256(evidence) as Hex);
+    await onStep({ kind: "tx", stage: "refund_opened", label: "Refund opened", tx: fileTx });
+  }
+  const keepOpen = async (why: string) => {
+    await sql()`insert into claims (id, user_id, filed_by, evidence, verdict, payout, merchant_fault, status, file_tx)
+      values (${approvalId}, ${userId}, ${filedBy}, ${evidence}, ${JSON.stringify({ ...verdict, records: undefined })}, 0, false, 'review', ${fileTx})
+      on conflict (id) do update set status = 'review', verdict = excluded.verdict`;
+    await sql()`update purchases set status = 'review' where id = ${approvalId}`;
+    await onStep({ kind: "info", text: why });
+    return { status: "review", payout: 0, resolveTx: null };
+  };
+  if (verdict.review) return keepOpen("Refund request kept open: a person will review it. It is never denied automatically.");
   const verdictHash = sha256(canonical({ ...verdict, records: verdict.records.map((r) => r.hash) })) as Hex;
-  const resolveTx = await chain.resolveClaim(approvalId, chain.toUnits(verdict.payout), verdictHash, verdict.merchantFault);
+  let resolveTx: Hex;
+  try {
+    resolveTx = await chain.resolveClaim(approvalId, chain.toUnits(verdict.payout), verdictHash, verdict.merchantFault);
+  } catch (e) {
+    return keepOpen(`Refund approved and kept open; it will be paid as soon as the fund can (${String(e).slice(0, 60)}).`);
+  }
   const receipt = await chain.publicClient.getTransactionReceipt({ hash: resolveTx });
   // The contract clamps payouts to its caps, so read what was actually paid.
   const paidOut = chain.claimPayoutFrom(receipt.logs);
   await sql()`insert into claims (id, user_id, filed_by, evidence, verdict, payout, merchant_fault, status, file_tx, resolve_tx)
     values (${approvalId}, ${userId}, ${filedBy}, ${evidence}, ${JSON.stringify({ ...verdict, records: undefined })},
     ${paidOut}, ${verdict.merchantFault}, ${paidOut > 0 ? "paid" : "rejected"}, ${fileTx}, ${resolveTx})
-    on conflict (id) do nothing`;
+    on conflict (id) do update set status = excluded.status, payout = excluded.payout, resolve_tx = excluded.resolve_tx`;
   await sql()`update purchases set status = ${paidOut > 0 ? "refunded" : "ok"} where id = ${approvalId}`;
   if (paidOut > 0) {
     await onStep({ kind: "payout", amount: paidOut, tx: resolveTx });

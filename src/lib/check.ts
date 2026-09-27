@@ -135,6 +135,10 @@ export async function checkout(offer: Offer, ctx: CheckContext): Promise<CheckRe
   } else if (!call.data) {
     semanticUnclear = true;
     reasons.push({ code: "check_failed", text: "The match check returned no verdict, so the user decides." });
+  } else if (call.data.checks.length < 1 + t.constraints.length) {
+    // Structural backstop: one check for the item plus one per rule, or the user decides.
+    semanticUnclear = true;
+    reasons.push({ code: "incomplete_check", text: "Halo could not check every one of your rules, so it asks you first." });
   } else {
     for (const c of call.data.checks) {
       if (c.verdict === "no") {

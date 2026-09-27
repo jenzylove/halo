@@ -1,5 +1,7 @@
 import { erc20Abi, type Hex } from "viem";
-import { publicClient, setVerified } from "@/lib/chain";
+import { publicClient, resolveClaim, setVerified, toUnits } from "@/lib/chain";
+import { sha256 } from "@/lib/serv";
+import { sql } from "@/lib/db";
 import { MERCHANTS } from "@/lib/merchants";
 import { cdpClient, operatorAccount, serverAccount } from "@/lib/wallets";
 import { USDC } from "@/lib/x402server";
@@ -11,7 +13,7 @@ export const maxDuration = 300;
 export async function POST(req: Request) {
   if (!process.env.ADMIN_TOKEN || req.headers.get("x-admin-token") !== process.env.ADMIN_TOKEN)
     return Response.json({ error: "forbidden" }, { status: 403 });
-  const { step, address, token, times } = (await req.json()) as { step: string; address?: string; token?: "eth" | "usdc"; times?: number };
+  const { step, address, token, times, approvalId, payout, reason } = (await req.json()) as { step: string; address?: string; token?: "eth" | "usdc"; times?: number; approvalId?: `0x${string}`; payout?: number; reason?: string };
   const cdp = cdpClient();
   const wait = (hash: string) => publicClient.waitForTransactionReceipt({ hash: hash as Hex });
   const balances = async (a: string) => ({
@@ -47,6 +49,14 @@ export async function POST(req: Request) {
     const txs: Record<string, string> = {};
     for (const m of MERCHANTS.filter((m) => m.verified)) txs[m.name] = await setVerified(m.payTo, true);
     return Response.json({ txs });
+  }
+
+  // Human review: a person resolves a claim Halo could not decide automatically.
+  if (step === "review" && approvalId && payout != null && reason) {
+    const tx = await resolveClaim(approvalId, toUnits(payout), sha256(`human review: ${reason}`) as `0x${string}`, payout > 0);
+    await sql()`update claims set status = ${payout > 0 ? "paid" : "rejected"}, payout = ${payout}, resolve_tx = ${tx} where id = ${approvalId}`;
+    await sql()`update purchases set status = ${payout > 0 ? "refunded" : "ok"} where id = ${approvalId}`;
+    return Response.json({ tx });
   }
 
   if (step === "balances" && address) return Response.json(await balances(address));

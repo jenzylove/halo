@@ -202,3 +202,9 @@ export async function poolLedger() {
     behind: Number(latest - cursor),
   };
 }
+
+/** True once a merchant has asked to withdraw its bond. */
+export async function isUnbonding(merchant: Hex): Promise<boolean> {
+  const [, unlockAt] = (await publicClient.readContract({ address: poolAddress(), abi: haloAbi, functionName: "merchants", args: [merchant] })) as [bigint, bigint, boolean];
+  return unlockAt > 0n;
+}

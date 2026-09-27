@@ -269,7 +269,7 @@ export async function manualClaim(userId: string, approvalId: Hex, evidence: str
     offer: Offer;
     terms: MandateTerms;
     amount: string;
-    delivery: string | null;
+    delivery: unknown;
     status: string;
   }[];
   const p = rows[0];
@@ -279,7 +279,8 @@ export async function manualClaim(userId: string, approvalId: Hex, evidence: str
     terms: p.terms,
     offer: p.offer,
     amountPaid: Number(p.amount),
-    delivery: p.delivery ?? "",
+    // Stored as jsonb, so it comes back parsed; the adjuster reads the canonical text.
+    delivery: p.delivery == null ? "" : typeof p.delivery === "string" ? p.delivery : canonical(p.delivery),
     evidence,
   });
   await saveRecords(approvalId, verdict.records);

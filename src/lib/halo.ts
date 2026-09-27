@@ -9,6 +9,7 @@ import { checkout } from "./check";
 import { migrate, saveRecords, sql } from "./db";
 import { canonical, compileMandate } from "./mandate";
 import { MERCHANTS, merchantBySlug, verifiedNames, type Listing, type MerchantDef } from "./merchants";
+import { recycle } from "./recycle";
 import { sha256 } from "./serv";
 import type { MandateTerms, Offer, Reason, Verdict } from "./types";
 import { asViemAccount, serverAccount, userAccount } from "./wallets";
@@ -39,6 +40,11 @@ export async function ensureUser(userId: string, onStep?: OnStep) {
   const rows = (await sql()`select id from users where id = ${userId}`) as unknown[];
   if (!rows.length) {
     const treasury = await serverAccount(TREASURY);
+    const have = (await chain.publicClient.readContract({ address: USDC.address as Hex, abi: erc20Abi, functionName: "balanceOf", args: [treasury.address as Hex] })) as bigint;
+    if (have < chain.toUnits(STARTER_USDC)) {
+      const r = await recycle(treasury.address as Hex);
+      await onStep?.({ kind: "info", text: `Recycled ${r.swept.toFixed(2)} test USDC from demo merchants back into the treasury.` });
+    }
     const data = encodeFunctionData({ abi: erc20Abi, functionName: "transfer", args: [acct.address, chain.toUnits(STARTER_USDC)] });
     const { transactionHash } = await (await import("./wallets")).cdpClient().evm.sendTransaction({
       address: treasury.address,

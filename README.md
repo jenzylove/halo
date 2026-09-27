@@ -6,7 +6,7 @@ Your agent pays in USDC, where there are no chargebacks. Halo brings the protect
 
 **Live:** https://halo-nine-chi.vercel.app · **Pool on Base Sepolia:** [`0x80eD3250…6387`](https://sepolia.basescan.org/address/0x80eD325076DF4eA062e60F74137Bc2c39A796387)
 
-Built for the OpenServ SERV Hackathon, Coinbase AgentKit track.
+Built for the OpenServ SERV Hackathon, Open Track (built on SERV Reasoning).
 
 ---
 
@@ -40,7 +40,7 @@ Every step is a real transaction on Base Sepolia. Prices are scaled down for tes
 | Piece | Role in Halo |
 |---|---|
 | **SERV Reasoning** | Mandate compiler, offer checker, injection screen and claims adjuster. Structured outputs for every decision, the Shadow Agent validating mandates, checks and verdicts, PromptGuard protecting Halo's own prompts. Every call is stored as a reasoning record with a content hash; mandate terms, deliveries and claim verdicts are anchored onchain by hash. |
-| **Coinbase AgentKit / CDP wallets** | Every user gets a CDP server wallet for their agent. It signs mandates (EIP-712), fees (EIP-3009, so users need no ETH) and x402 payments. Halo's operator is a CDP wallet too. |
+| **Coinbase CDP wallets** | Every user gets a CDP server wallet for their agent. It signs mandates (EIP-712), fees (EIP-3009, so users need no ETH) and x402 payments. Halo's operator is a CDP wallet too. |
 | **x402** | How the agent pays merchants. Halo wraps the x402 flow: check first, then pay. |
 | **HaloPool** (Solidity, Base Sepolia) | Mandates, approvals, fees, claims with caps, merchant bonds and slashing, and a solvency limit (now set to full reserve: 1x). 30 Foundry tests. |
 

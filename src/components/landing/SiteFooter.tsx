@@ -82,7 +82,7 @@ export function SiteFooter() {
 
       <div className="relative mx-auto flex max-w-6xl flex-col gap-2 border-t hair px-4 py-6 text-xs text-muted sm:flex-row sm:justify-between">
         <span>Test USDC on Base Sepolia. Demo prices scaled down for testnet.</span>
-        <span>Reasoning by SERV · Wallets by Coinbase AgentKit · Payments over x402</span>
+        <span>Reasoning by SERV · Wallets by Coinbase CDP · Payments over x402</span>
       </div>
     </footer>
   );

@@ -1,6 +1,6 @@
 # Halo: submission
 
-**Track:** Coinbase AgentKit · OpenServ SERV Hackathon, Edition 01
+**Track:** Open Track (anything built on SERV Reasoning) · OpenServ SERV Hackathon, Edition 01
 
 **One line:** Let an AI agent shop for you. If it buys the wrong thing, you get your money back.
 
@@ -27,7 +27,7 @@ AI agents now shop and pay for people, and they pay in stablecoins over x402 bec
 ## How it uses the sponsor tech
 
 - **SERV Reasoning** makes every judgment: the rules compiler, the listing injection screen, the offer match, and the refund adjuster. Structured outputs, the Shadow Agent and PromptGuard on every call, with reasoning records you can open.
-- **Coinbase AgentKit / CDP:** every shopper gets a Coinbase CDP server wallet (the wallet layer AgentKit runs on) that signs rules (EIP-712), fees (EIP-3009, gasless) and x402 payments. Funding new agents is written against AgentKit's `CdpEvmWalletProvider` and `ERC20ActionProvider.transfer` ([src/lib/agentkit.ts](../src/lib/agentkit.ts)); on Vercel's runtime AgentKit's CommonJS build currently fails to load an ES module dependency (`jose`), so the same transfer falls back to the CDP SDK, and the app labels which path ran.
+- **Coinbase CDP wallets (AgentKit attempted):** every shopper gets a Coinbase CDP server wallet (the wallet layer AgentKit runs on) that signs rules (EIP-712), fees (EIP-3009, gasless) and x402 payments. Funding new agents is written against AgentKit's `CdpEvmWalletProvider` and `ERC20ActionProvider.transfer` ([src/lib/agentkit.ts](../src/lib/agentkit.ts)); on Vercel's runtime AgentKit's CommonJS build currently fails to load an ES module dependency (`jose`), so the same transfer falls back to the CDP SDK, and the app labels which path ran.
 - **x402** is how agents pay stores.
 
 ## Proof

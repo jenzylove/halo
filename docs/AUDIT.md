@@ -125,3 +125,19 @@ An independent reviewer rated the build a strong demo but not yet a credible gua
 | Medium | An empty `checks` array could reach approve | Deterministic backstop: one check for the item plus one per rule, or the user decides |
 | Medium | Merchants could unbond while claims were open | A merchant that requests unbonding is no longer trusted; unbond delay (8 days) now exceeds fee window plus claim window (1 day) |
 | Copy | "Nobody protects the buyer" too broad (escrow products exist) | Positioning is now **post-payment protection**: Halo still protects you after the merchant has been paid |
+
+---
+
+# Third external audit, 2026-09-27 (commit eb45645)
+
+Verdict: Open Track readiness ~80%, AgentKit track ~55%, real-world ~30%. The fund is now fully reserved, undecidable claims stay open, failed payments refund fees.
+
+| Finding | Response |
+|---|---|
+| AgentKit only attempted for starter funding and falls back to CDP in production | Accepted. Submission moved to the **Open Track**; docs no longer claim AgentKit runs in production. |
+| Demo shops are four controlled test stores | Accepted as a testnet limit; stated on the site and in docs. Real merchants need a Halo catalog and deposit. |
+| 1% fee model unproven (demo is deliberately failure heavy: 0.82 USDC net loss) | Accepted. The demo exists to exercise refunds; unit economics remain a hypothesis in the PRD. |
+| MCP key is delegated authority, not per job consent | Accepted and documented; per job approvals are the next step. |
+| Evals are authored, not independent | Accepted. |
+
+Note: the live site footer still says "Wallets by Coinbase AgentKit"; Vercel's daily deployment limit was reached before that copy could be redeployed. The wallets are Coinbase CDP server wallets.

@@ -16,7 +16,7 @@ export default function OG() {
           <span style={{ color: "#8b8880" }}>If it buys the wrong thing,</span>
           <span style={{ color: "#f2c14e", fontStyle: "italic" }}>you get your money back.</span>
         </div>
-        <div style={{ marginTop: 36, fontSize: 24, color: "#8b8880" }}>halo · SERV reasoning · Coinbase AgentKit · x402 on Base</div>
+        <div style={{ marginTop: 36, fontSize: 24, color: "#8b8880" }}>halo · SERV reasoning · Coinbase CDP · x402 on Base</div>
       </div>
     ),
     size,

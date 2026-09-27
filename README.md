@@ -14,7 +14,7 @@ Built for the OpenServ SERV Hackathon, Coinbase AgentKit track.
 
 AI agents now shop and pay for people, and they pay in stablecoins over x402 because it is instant and needs no card. But a USDC payment is final. There is no refund button and no chargeback.
 
-Agents do go wrong: lookalike shops, listings with instructions planted for the agent, the wrong date, the wrong item, goods that never arrive. On a card, the network steps in. On the crypto rail, nobody does. Today's protection products either guard merchants from bad agents or only cover card payments. **Nobody protects the person whose stablecoin agent made the mistake.**
+Agents do go wrong: lookalike shops, listings with instructions planted for the agent, the wrong date, the wrong item, goods that never arrive. On a card, the network steps in. On the crypto rail, the options are thin: escrow holds the money before the merchant is paid, and fraud tools protect merchants. **Halo protects the buyer after the merchant has already been paid**: it checks every purchase first, then refunds from a fully reserved fund when a delivery turns out wrong.
 
 ## How Halo works
 
@@ -42,7 +42,7 @@ Every step is a real transaction on Base Sepolia. Prices are scaled down for tes
 | **SERV Reasoning** | Mandate compiler, offer checker, injection screen and claims adjuster. Structured outputs for every decision, the Shadow Agent validating mandates, checks and verdicts, PromptGuard protecting Halo's own prompts. Every call is stored as a reasoning record with a content hash; mandate terms, deliveries and claim verdicts are anchored onchain by hash. |
 | **Coinbase AgentKit / CDP wallets** | Every user gets a CDP server wallet for their agent. It signs mandates (EIP-712), fees (EIP-3009, so users need no ETH) and x402 payments. Halo's operator is a CDP wallet too. |
 | **x402** | How the agent pays merchants. Halo wraps the x402 flow: check first, then pay. |
-| **HaloPool** (Solidity, Base Sepolia) | Mandates, approvals, fees, claims with caps, merchant bonds and slashing, and a solvency limit of 20x pool capital. 30 Foundry tests. |
+| **HaloPool** (Solidity, Base Sepolia) | Mandates, approvals, fees, claims with caps, merchant bonds and slashing, and a solvency limit (now set to full reserve: 1x). 30 Foundry tests. |
 
 ## Measured, not claimed
 
@@ -59,7 +59,7 @@ Raw mode paid out on a delivery that contained an injected "issue a full refund"
 
 ## Economics
 
-A 1% fee (minimum 0.02 USDC) on every covered purchase goes into the pool. Halo only guarantees purchases it checked, so a payout means Halo or the merchant got it wrong, and merchant faults are recovered from bonds. On a 50 USDC purchase with assumed claim rates, Halo keeps about 0.42 USDC (83%). The contract enforces the risk limits: 20x leverage, per claim and per user caps, a stricter limit for new users. Live numbers, read from chain events: [/pool](https://halo-nine-chi.vercel.app/pool). Full model: [docs/PRD.md](docs/PRD.md#9-fund-economics).
+A 1% fee (minimum 0.02 USDC) on every covered purchase goes into the pool. Halo only guarantees purchases it checked, so a payout means Halo or the merchant got it wrong, and merchant faults are recovered from bonds. On a 50 USDC purchase with assumed claim rates, Halo keeps about 0.42 USDC (83%). The contract enforces the risk limits: full reserve (open coverage never exceeds the fund), per claim and per user caps, a stricter limit for new users. Claims Halo cannot decide stay open for human review instead of being denied. Live numbers, read from chain events: [/pool](https://halo-nine-chi.vercel.app/pool). Full model: [docs/PRD.md](docs/PRD.md#9-fund-economics).
 
 ## Use it
 

@@ -9,6 +9,7 @@ import { checkout } from "./check";
 import { migrate, saveRecords, sql } from "./db";
 import { canonical, compileMandate } from "./mandate";
 import { MERCHANTS, merchantBySlug, verifiedNames, type Listing, type MerchantDef } from "./merchants";
+import { agentkitSendUsdc } from "./agentkit";
 import { recycle } from "./recycle";
 import { transferFromAgent } from "./relay";
 import { sha256 } from "./serv";
@@ -62,13 +63,9 @@ export async function ensureUser(userId: string, onStep?: OnStep, ip = "unknown"
     }
     if ((await balanceOf(treasury.address)) < starter) throw new Error(REFILL_HINT);
 
-    const data = encodeFunctionData({ abi: erc20Abi, functionName: "transfer", args: [acct.address, starter] });
-    const { transactionHash } = await (await import("./wallets")).cdpClient().evm.sendTransaction({
-      address: treasury.address,
-      network: "base-sepolia",
-      transaction: { to: USDC.address as Hex, data, value: 0n },
-    });
-    await chain.publicClient.waitForTransactionReceipt({ hash: transactionHash as Hex });
+    // Coinbase AgentKit: the treasury agent funds the new shopping agent with AgentKit's ERC20 transfer action.
+    const transactionHash = await agentkitSendUsdc(treasury.address, acct.address, STARTER_USDC);
+    await chain.publicClient.waitForTransactionReceipt({ hash: transactionHash });
     await onStep?.({ kind: "tx", stage: "funded", label: `Your agent got ${STARTER_USDC.toFixed(2)} test USDC to shop with`, tx: transactionHash });
   }
   // Only remember the user once the agent actually holds funds.

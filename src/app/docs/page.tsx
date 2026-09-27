@@ -217,7 +217,7 @@ result.steps    // every decision and transaction, with reasons`}</Code>
             ["Agent wallet", "A Coinbase CDP server wallet per user. It signs mandates (EIP-712), fees (EIP-3009) and x402 payments. It never needs ETH: Halo relays."],
             ["Owner", "The person's own wallet, linked by a signature. Refunds are forwarded there; it can top up and withdraw the agent wallet."],
             ["Checkout check", "Rules first (budget, quantity, expiry, currency, lookalike names), then SERV: an injection screen and a semantic match. Outcome: approve, decline or ask the user."],
-            ["Coverage", "An approved purchase whose 1% fee reached the pool. Only covered purchases can be claimed, for 7 days."],
+            ["Coverage", "An approved purchase whose 1% fee reached the pool. Only covered purchases can be claimed, for 1 day."],
             ["Claim", "Automatic when the delivery contradicts the mandate, or filed by the user. SERV judges it; code clamps the payout to caps."],
             ["Bond", "USDC a merchant posts. Merchant fault verdicts slash it back into the pool."],
             ["Operator", "Halo's own CDP wallet. The only address that can record approvals and resolve claims."],
@@ -283,10 +283,10 @@ result.steps    // every decision and transaction, with reasons`}</Code>
           head={["Function", "Who", "What it does"]}
           rows={[
             [<C key="1">registerMandate</C>, "operator", "Locks a mandate hash, verified against the agent wallet's EIP-712 signature"],
-            [<C key="2">recordApproval</C>, "operator", "Records an approved purchase; enforces budget, new user and 20x solvency limits"],
+            [<C key="2">recordApproval</C>, "operator", "Records an approved purchase; enforces budget, new user and full reserve limits"],
             [<C key="3">payFeeWithAuthorization</C>, "anyone (relayed)", "Pulls the fee with the agent's EIP-3009 signature; coverage starts"],
             [<C key="4">linkPayment</C>, "operator", "Anchors the x402 payment and the delivery hash"],
-            [<C key="5">fileClaim</C>, "user or operator", "Opens a claim inside the 7 day window"],
+            [<C key="5">fileClaim</C>, "user or operator", "Opens a claim inside the 1 day window"],
             [<C key="6">resolveClaim</C>, "operator", "Pays the user (clamped to caps); slashes the merchant bond on merchant fault"],
             [<C key="7">depositBond / withdrawBond</C>, "merchant", "Bond in; out only after an unbond delay"],
             [<C key="8">release</C>, "anyone", "Frees capacity for expired approvals and closed claim windows"],
@@ -306,11 +306,11 @@ result.steps    // every decision and transaction, with reasons`}</Code>
         <Table
           head={["Limit", "Demo value", "Why"]}
           rows={[
-            ["Leverage", "open coverage ≤ 20× pool capital", "The contract refuses approvals past it"],
+            ["Reserve", "open coverage ≤ 1× the fund (full reserve)", "Every protected dollar is already in the fund"],
             ["Per claim cap", "25 USDC", "No single event can drain the pool"],
             ["Per user cap", "50 USDC per 30 days", "Limits claim farming"],
             ["New users", "10 USDC per purchase for 7 days", "Fresh accounts cannot farm large claims"],
-            ["Claim window", "7 days after the fee", "Capacity frees up afterwards"],
+            ["Refund window", "1 day after the purchase", "Deliveries are checked instantly; you can still ask by hand for a day"],
             ["Unverified merchants", "0.20 USDC without asking you", "Unknown sellers need your approval"],
           ]}
         />
@@ -354,8 +354,13 @@ result.steps    // every decision and transaction, with reasons`}</Code>
         <ul className="mt-5 space-y-3 text-sm leading-relaxed text-muted">
           <li>
             <span className="text-fg">Agent wallets are server wallets.</span> Halo&apos;s server can sign for them, which is what
-            lets the agent act without you. On this testnet demo that is the point; link your own wallet as owner so refunds and
-            withdrawals land with you.
+            lets the agent act without you. Link your own wallet as owner so refunds and withdrawals land with you.
+          </li>
+          <li>
+            <span className="text-fg">Your API key is delegated spending authority.</span> Whoever holds it (your assistant, or
+            anyone you share it with) can approve rules and spend your agent&apos;s balance within them. The assistant is asked to
+            confirm with you, but the key itself does not prove a human said yes. Keep it private and keep the agent&apos;s balance
+            small.
           </li>
           <li>
             <span className="text-fg">The contract owner key is offline.</span> Changing the operator, the limits or pausing the pool
@@ -372,6 +377,11 @@ result.steps    // every decision and transaction, with reasons`}</Code>
           <li>
             <span className="text-fg">Everything is recorded.</span> Mandate hashes, approvals, fees, payments, delivery hashes and
             verdict hashes are onchain; the words behind them are in the reasoning records.
+          </li>
+          <li>
+            <span className="text-fg">Every protected dollar is backed.</span> The pool runs at full reserve: the contract refuses
+            new protection unless the fund already holds enough to refund every open purchase. A refund Halo cannot decide stays open
+            for a person to review; it is never denied automatically.
           </li>
           <li>
             <span className="text-fg">Abuse limits.</span> 3 new agent wallets per network per day, 25 per day overall, 20 mandate

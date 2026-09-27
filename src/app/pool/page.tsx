@@ -19,8 +19,8 @@ export default async function Pool() {
     ["Added by purchases", `${data.fees.toFixed(2)} USDC`, "1% of every protected purchase (at least 0.02)"],
     ["Refunded to people", `${data.claimsPaid.toFixed(2)} USDC`, `${data.claims} refund decisions so far`],
     ["Paid back by stores at fault", `${data.recovered.toFixed(2)} USDC`, "Taken from the deposit of the store that got it wrong"],
-    ["Still protected right now", `${data.openCoverage.toFixed(2)} USDC`, "Purchases that can still be refunded (7 day window)"],
-    ["Safety limit", `${leverage.toFixed(2)}x of 20x`, "The contract refuses new protection past 20x what is in the fund"],
+    ["Still protected right now", `${data.openCoverage.toFixed(2)} USDC`, "Purchases that can still be refunded (1 day window)"],
+    ["Backing", `${leverage.toFixed(2)}x of 1x`, "Full reserve: the contract refuses new protection unless the fund can refund every open purchase"],
   ];
   const net = data.claimsPaid - data.recovered;
   return (

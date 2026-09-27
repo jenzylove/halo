@@ -145,49 +145,60 @@ export function claimPayoutFrom(logs: Log[]): number {
   return 0;
 }
 
-/** PRD H4: every pool number is computed from onchain events, nothing from the database. */
+/** PRD H4: every pool number is computed from onchain events. Postgres only caches the running totals and a block cursor,
+ * because public RPCs cap eth_getLogs at 1,000 blocks per call. */
 export async function poolLedger() {
-  const fromBlock = BigInt(process.env.HALO_POOL_BLOCK || "0");
-  const events = await publicClient.getContractEvents({ address: poolAddress(), abi: haloAbi, fromBlock });
-  let volume = 0n, fees = 0n, claimsPaid = 0n, recovered = 0n, funded = 0n;
-  let approvals = 0, covered = 0, claims = 0;
-  const approvedAmount = new Map<string, bigint>();
-  for (const e of events as unknown as { eventName: string; args: Record<string, unknown> }[]) {
-    const a = e.args;
-    switch (e.eventName) {
-      case "ApprovalRecorded":
-        approvals++;
-        approvedAmount.set(a.approvalId as string, a.amount as bigint);
-        break;
-      case "FeePaid":
-        covered++;
-        fees += a.fee as bigint;
-        volume += approvedAmount.get(a.approvalId as string) ?? 0n;
-        break;
-      case "ClaimResolved":
-        claims++;
-        claimsPaid += a.payout as bigint;
-        break;
-      case "BondSlashed":
-        recovered += a.amount as bigint;
-        break;
-      case "PoolFunded":
-        funded += a.amount as bigint;
-        break;
+  const { migrate, sql } = await import("./db");
+  await migrate();
+  await sql()`create table if not exists ledger (pool text primary key, cursor bigint not null, totals jsonb not null)`;
+  const pool = poolAddress().toLowerCase();
+  const empty = { volume: "0", fees: "0", claimsPaid: "0", recovered: "0", funded: "0", approvals: 0, covered: 0, claims: 0, events: 0, amounts: {} as Record<string, string> };
+  const [row] = (await sql()`select cursor, totals from ledger where pool = ${pool}`) as { cursor: string; totals: typeof empty }[];
+  let cursor = row ? BigInt(row.cursor) : BigInt(process.env.HALO_POOL_BLOCK || "0") - 1n;
+  const t = row ? row.totals : empty;
+  const latest = await publicClient.getBlockNumber();
+  const add = (k: "volume" | "fees" | "claimsPaid" | "recovered" | "funded", v: bigint) => (t[k] = (BigInt(t[k]) + v).toString());
+
+  // Scan at most 20 chunks per request so a page load stays fast; the rest is picked up on the next load.
+  for (let i = 0; i < 20 && cursor < latest; i++) {
+    const from = cursor + 1n;
+    const to = from + 999n < latest ? from + 999n : latest;
+    const events = await publicClient.getContractEvents({ address: poolAddress(), abi: haloAbi, fromBlock: from, toBlock: to });
+    for (const e of events as unknown as { eventName: string; args: Record<string, unknown> }[]) {
+      const a = e.args;
+      t.events++;
+      if (e.eventName === "ApprovalRecorded") {
+        t.approvals++;
+        t.amounts[a.approvalId as string] = String(a.amount);
+      } else if (e.eventName === "FeePaid") {
+        t.covered++;
+        add("fees", a.fee as bigint);
+        add("volume", BigInt(t.amounts[a.approvalId as string] ?? "0"));
+      } else if (e.eventName === "ClaimResolved") {
+        t.claims++;
+        add("claimsPaid", a.payout as bigint);
+      } else if (e.eventName === "BondSlashed") add("recovered", a.amount as bigint);
+      else if (e.eventName === "PoolFunded") add("funded", a.amount as bigint);
     }
+    cursor = to;
   }
-  const f = fromUnits;
-  const net = f(claimsPaid) - f(recovered);
+  await sql()`insert into ledger (pool, cursor, totals) values (${pool}, ${cursor.toString()}, ${JSON.stringify(t)})
+    on conflict (pool) do update set cursor = excluded.cursor, totals = excluded.totals`;
+
+  const f = (v: string) => fromUnits(BigInt(v));
+  const fees = f(t.fees);
   return {
-    approvals,
-    covered,
-    claims,
-    volume: f(volume),
-    fees: f(fees),
-    claimsPaid: f(claimsPaid),
-    recovered: f(recovered),
-    funded: f(funded),
-    lossRatio: fees > 0n ? net / f(fees) : 0,
-    events: events.length,
+    approvals: t.approvals,
+    covered: t.covered,
+    claims: t.claims,
+    volume: f(t.volume),
+    fees,
+    claimsPaid: f(t.claimsPaid),
+    recovered: f(t.recovered),
+    funded: f(t.funded),
+    lossRatio: fees > 0 ? (f(t.claimsPaid) - f(t.recovered)) / fees : 0,
+    events: t.events,
+    syncedTo: Number(cursor),
+    behind: Number(latest - cursor),
   };
 }

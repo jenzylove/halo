@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { PoolStrip } from "@/components/PoolStrip";
 
-export const revalidate = 30;
+export const dynamic = "force-dynamic";
 
 const steps = [
   ["Say what you want", "\"2 tickets for Oct 12, under $5 each.\" Halo turns it into a contract and locks it onchain before your agent spends a cent."],

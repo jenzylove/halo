@@ -31,7 +31,7 @@ export type OnStep = (s: Step) => void | Promise<void>;
 
 const UNVERIFIED_CAP = 0.2; // USDC, PRD E3
 const TREASURY = "halo-treasury";
-const STARTER_USDC = 1.2;
+const STARTER_USDC = 1.0; // covers the ticket demo: 0.90 + fee, refunded, then 0.95 + fee
 
 // ---------- users ----------
 
@@ -41,22 +41,28 @@ const WALLETS_PER_DAY = 25;
 export async function ensureUser(userId: string, onStep?: OnStep, ip = "unknown") {
   await migrate();
   const rows = (await sql()`select id from users where id = ${userId}`) as unknown[];
-  if (!rows.length) {
+  if (rows.length) return { userId, wallet: (await userAccount(userId)).address as Hex };
+
+  const acct = await userAccount(userId);
+  const balanceOf = async (a: string) =>
+    (await chain.publicClient.readContract({ address: USDC.address as Hex, abi: erc20Abi, functionName: "balanceOf", args: [a as Hex] })) as bigint;
+  const starter = chain.toUnits(STARTER_USDC);
+
+  // An agent the owner already topped up needs nothing from the treasury.
+  if ((await balanceOf(acct.address)) < starter) {
     // Rate limits so visitors cannot drain the demo treasury (PRD section 12).
     const [perIp] = (await sql()`select count(*)::int as n from users where ip = ${ip} and created_at > now() - interval '1 day'`) as { n: number }[];
     const [all] = (await sql()`select count(*)::int as n from users where created_at > now() - interval '1 day'`) as { n: number }[];
-    if (perIp.n >= WALLETS_PER_IP_PER_DAY) throw new Error("Demo limit reached for your network today. Try again tomorrow, or use the MCP server with an existing wallet.");
-    if (all.n >= WALLETS_PER_DAY) throw new Error("The demo has handed out today's test USDC. Try again tomorrow.");
-  }
-  const acct = await userAccount(userId);
-  if (!rows.length) {
+    if (perIp.n >= WALLETS_PER_IP_PER_DAY || all.n >= WALLETS_PER_DAY) throw new Error(REFILL_HINT);
+
     const treasury = await serverAccount(TREASURY);
-    const have = (await chain.publicClient.readContract({ address: USDC.address as Hex, abi: erc20Abi, functionName: "balanceOf", args: [treasury.address as Hex] })) as bigint;
-    if (have < chain.toUnits(STARTER_USDC)) {
-      const r = await recycle(treasury.address as Hex);
-      await onStep?.({ kind: "info", text: `Recycled ${r.swept.toFixed(2)} test USDC from demo merchants back into the treasury.` });
+    if ((await balanceOf(treasury.address)) < starter) {
+      const r = await refillTreasury(treasury.address as Hex);
+      if (r.total > 0) await onStep?.({ kind: "info", text: `Refilled the demo treasury with ${r.total.toFixed(2)} test USDC.` });
     }
-    const data = encodeFunctionData({ abi: erc20Abi, functionName: "transfer", args: [acct.address, chain.toUnits(STARTER_USDC)] });
+    if ((await balanceOf(treasury.address)) < starter) throw new Error(REFILL_HINT);
+
+    const data = encodeFunctionData({ abi: erc20Abi, functionName: "transfer", args: [acct.address, starter] });
     const { transactionHash } = await (await import("./wallets")).cdpClient().evm.sendTransaction({
       address: treasury.address,
       network: "base-sepolia",
@@ -64,10 +70,29 @@ export async function ensureUser(userId: string, onStep?: OnStep, ip = "unknown"
     });
     await chain.publicClient.waitForTransactionReceipt({ hash: transactionHash as Hex });
     await onStep?.({ kind: "tx", label: `Funded your agent wallet with ${STARTER_USDC} test USDC`, tx: transactionHash });
-    // Only remember the user once the starter funds actually landed.
-    await sql()`insert into users (id, wallet, ip) values (${userId}, ${acct.address}, ${ip}) on conflict do nothing`;
   }
+  // Only remember the user once the agent actually holds funds.
+  await sql()`insert into users (id, wallet, ip) values (${userId}, ${acct.address}, ${ip}) on conflict do nothing`;
   return { userId, wallet: acct.address as Hex };
+}
+
+const REFILL_HINT =
+  "The demo treasury is refilling. Connect your wallet and top up your agent with test USDC (faucet.circle.com, Base Sepolia), then confirm again.";
+
+/** Refill the treasury: sweep demo merchant revenue back, then ask the Coinbase faucet (1 USDC per claim, daily limit). */
+export async function refillTreasury(treasury: Hex, faucetClaims = 3) {
+  const r = await recycle(treasury);
+  let fromFaucet = 0;
+  for (let i = 0; i < faucetClaims; i++) {
+    try {
+      const { transactionHash } = await (await import("./wallets")).cdpClient().evm.requestFaucet({ address: treasury, network: "base-sepolia", token: "usdc" });
+      await chain.publicClient.waitForTransactionReceipt({ hash: transactionHash as Hex });
+      fromFaucet += 1;
+    } catch {
+      break; // daily faucet limit reached
+    }
+  }
+  return { recycled: r.toTreasury, fromFaucet, total: r.toTreasury + fromFaucet };
 }
 
 // ---------- mandates ----------

@@ -2,6 +2,7 @@ import { createHash } from "node:crypto";
 import { verifyMessage, type Hex } from "viem";
 import { linkOwner, ownerOf } from "@/lib/halo";
 import { agentBalance } from "@/lib/relay";
+import { migrate, sql } from "@/lib/db";
 import { userId } from "@/lib/stream";
 import { userAccount } from "@/lib/wallets";
 
@@ -12,18 +13,22 @@ const fingerprint = (uid: string) => createHash("sha256").update(`halo:${uid}`).
 const message = (agent: string, uid: string, issued: string) =>
   `Link my wallet as the owner of my Halo agent.\n\nAgent wallet: ${agent}\nSession: ${fingerprint(uid)}\nIssued: ${issued}\n\nRefunds will be forwarded to this wallet. This signature costs nothing.`;
 
-// The owner layer: who the agent belongs to, what it holds, and the message to sign to link a wallet.
+// The owner layer: who the agent belongs to and what it holds. Read only: never creates a wallet on page view.
 export async function GET() {
   const uid = await userId();
+  await migrate();
+  const [user] = (await sql()`select wallet from users where id = ${uid}`) as { wallet: string }[];
+  const owner = await ownerOf(uid);
+  const agent = user?.wallet ?? (owner ? (await userAccount(uid)).address : null);
+  return Response.json({ agent, owner, agentUsdc: agent ? Number(await agentBalance(uid)) / 1e6 : 0 });
+}
+
+// Challenge: the explicit "Connect wallet" click creates the agent wallet if needed and returns the message to sign.
+export async function PUT() {
+  const uid = await userId();
   const agent = await userAccount(uid);
-  const [owner, balance] = await Promise.all([ownerOf(uid), agentBalance(uid)]);
   const issued = new Date().toISOString();
-  return Response.json({
-    agent: agent.address,
-    owner,
-    agentUsdc: Number(balance) / 1e6,
-    link: { issued, message: message(agent.address, uid, issued) },
-  });
+  return Response.json({ agent: agent.address, issued, message: message(agent.address, uid, issued) });
 }
 
 // Link: the owner signs a plain message naming the agent wallet; Halo verifies it and remembers the owner.

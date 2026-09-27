@@ -21,10 +21,9 @@ const scan = (tx: string) => `https://sepolia.basescan.org/tx/${tx}`;
 const short = (a: string) => `${a.slice(0, 6)}…${a.slice(-4)}`;
 
 interface State {
-  agent: string;
+  agent: string | null;
   owner: string | null;
   agentUsdc: number;
-  link: { issued: string; message: string };
 }
 
 export function WalletPanel({ compact = false }: { compact?: boolean }) {
@@ -53,12 +52,12 @@ export function WalletPanel({ compact = false }: { compact?: boolean }) {
     setNote(null);
     try {
       const [address] = (await p.request({ method: "eth_requestAccounts" })) as string[];
-      const fresh = (await fetch("/api/owner").then((r) => r.json())) as State;
-      const signature = (await p.request({ method: "personal_sign", params: [fresh.link.message, address] })) as string;
+      const challenge = (await fetch("/api/owner", { method: "PUT" }).then((r) => r.json())) as { issued: string; message: string };
+      const signature = (await p.request({ method: "personal_sign", params: [challenge.message, address] })) as string;
       const r = await fetch("/api/owner", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ address, signature, issued: fresh.link.issued }),
+        body: JSON.stringify({ address, signature, issued: challenge.issued }),
       }).then((r) => r.json());
       if (r.error) setNote({ text: r.error, bad: true });
       else setNote({ text: `Linked. Refunds now go to ${short(address)}.` });
@@ -72,7 +71,7 @@ export function WalletPanel({ compact = false }: { compact?: boolean }) {
 
   async function topUp() {
     const p = eth();
-    if (!p || !s?.owner) return;
+    if (!p || !s?.owner || !s.agent) return;
     setBusy("Waiting for your wallet");
     setNote(null);
     try {
@@ -109,12 +108,16 @@ export function WalletPanel({ compact = false }: { compact?: boolean }) {
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div className="space-y-1 text-sm">
           <p className="text-xs uppercase tracking-[0.2em] text-muted">Your agent</p>
-          <p className="font-mono">
-            <a className="underline decoration-dotted" href={`https://sepolia.basescan.org/address/${s.agent}`} target="_blank" rel="noreferrer">
-              {short(s.agent)}
-            </a>{" "}
-            · <span className="text-gold">{s.agentUsdc.toFixed(2)} USDC</span>
-          </p>
+          {s.agent ? (
+            <p className="font-mono">
+              <a className="underline decoration-dotted" href={`https://sepolia.basescan.org/address/${s.agent}`} target="_blank" rel="noreferrer">
+                {short(s.agent)}
+              </a>{" "}
+              · <span className="text-gold">{s.agentUsdc.toFixed(2)} USDC</span>
+            </p>
+          ) : (
+            <p>Created and funded with test USDC when you confirm your first mandate.</p>
+          )}
           <p className="text-muted">
             Owner:{" "}
             {s.owner ? (

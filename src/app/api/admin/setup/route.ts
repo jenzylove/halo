@@ -59,6 +59,17 @@ export async function POST(req: Request) {
     return Response.json({ tx });
   }
 
+  // Diagnose AgentKit in this runtime: a 0.01 USDC transfer from the treasury agent.
+  if (step === "agentkit" && address) {
+    try {
+      const { agentkitSendUsdc } = await import("@/lib/agentkit");
+      const treasury = await serverAccount("halo-treasury");
+      return Response.json({ ok: true, node: process.version, tx: await agentkitSendUsdc(treasury.address, address, 0.01) });
+    } catch (e) {
+      return Response.json({ ok: false, node: process.version, error: String((e as Error)?.stack ?? e).slice(0, 1500) });
+    }
+  }
+
   if (step === "balances" && address) return Response.json(await balances(address));
 
   return Response.json({ error: "unknown step" }, { status: 400 });

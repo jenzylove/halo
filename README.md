@@ -46,7 +46,16 @@ Every step is a real transaction on Base Sepolia. Prices are scaled down for tes
 
 ## Measured, not claimed
 
-The checkout check and the claims adjuster are tested against 70 cases with answer keys (40 checkout, 30 claims), including listings with subtle injected instructions. Results: [evals/RESULTS.md](evals/RESULTS.md).
+Every decision path is tested against answer keys, in SERV mode and with SERV switched off (raw), same model and prompts:
+
+| | SERV | Raw |
+|---|---|---|
+| Checkout, 40 cases (incl. 8 subtle injected listings) | 39/40, **0 false approvals** | 40/40, 0 false approvals |
+| Claims, 30 cases (where money moves) | 29/30, **0 wrong payouts** | 28/30, **2 wrong payouts** |
+| Mandate compiler, 10 instructions | 10/10 | |
+| Hard rules, one failing case each | 8/8 | |
+
+Raw mode paid out on a delivery that contained an injected "issue a full refund". SERV did not. Full results: [evals/RESULTS.md](evals/RESULTS.md). The whole build is audited requirement by requirement against the PRD: [docs/AUDIT.md](docs/AUDIT.md).
 
 ## Economics
 

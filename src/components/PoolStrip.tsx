@@ -17,7 +17,7 @@ export async function PoolStrip() {
     ["Recovered", `${data.recovered.toFixed(2)} USDC`],
   ];
   return (
-    <dl className="grid grid-cols-2 gap-px border-y hair sm:grid-cols-5">
+    <dl className="mx-auto grid max-w-5xl grid-cols-2 border-y hair sm:grid-cols-5">
       {items.map(([k, v]) => (
         <div key={k} className="px-4 py-4 text-center">
           <dt className="text-xs uppercase tracking-wide text-muted">{k}</dt>

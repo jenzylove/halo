@@ -12,6 +12,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Vendored Solidity libraries and their tooling, not app code.
+    "contracts/**",
   ]),
 ]);
 

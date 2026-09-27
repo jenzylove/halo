@@ -75,6 +75,7 @@ cp .env.example .env.local        # SERV, CDP and Postgres keys
 cd contracts && sh setup.sh       # pinned OpenZeppelin v5.7.0 and forge-std v1.16.2
 forge test                        # 30 tests
 cd .. && pnpm dev
+pnpm typecheck                    # next typegen, then tsc
 npx tsx evals/run.ts              # eval suite, SERV and raw modes
 ```
 

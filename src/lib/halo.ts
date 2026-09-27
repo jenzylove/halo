@@ -261,7 +261,7 @@ export async function purchase(userId: string, mandateId: Hex, url: string, onSt
   // 7. Automatic delivery check (D1): a mismatch becomes a claim with no user action.
   const verdict = await adjudicate({ terms: m.terms, offer, amountPaid: offer.total, delivery: deliveryText });
   await saveRecords(approvalId, verdict.records);
-  const { records: _r, ...shown } = verdict;
+  const shown = withoutRecords(verdict);
   await onStep({ kind: "verdict", merchant: offer.merchant.name, verdict: shown });
   if (!verdict.covered) {
     await sql()`update purchases set status = 'ok' where id = ${approvalId}`;
@@ -313,7 +313,7 @@ export async function manualClaim(userId: string, approvalId: Hex, evidence: str
     evidence,
   });
   await saveRecords(approvalId, verdict.records);
-  const { records: _r, ...shown } = verdict;
+  const shown = withoutRecords(verdict);
   await onStep({ kind: "verdict", merchant: p.offer.merchant.name, verdict: shown });
   return settleClaim(userId, approvalId, "user", evidence, verdict, onStep);
 }
@@ -378,4 +378,9 @@ export async function userForKey(key: string | null): Promise<string | null> {
   await migrate();
   const [row] = (await sql()`select user_id from api_keys where key = ${key}`) as { user_id: string }[];
   return row?.user_id ?? null;
+}
+
+/** A verdict without its reasoning records, for streaming to the browser. */
+function withoutRecords(v: Verdict): Omit<Verdict, "records"> {
+  return { covered: v.covered, type: v.type, payout: v.payout, merchantFault: v.merchantFault, reason: v.reason };
 }

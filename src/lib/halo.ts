@@ -34,10 +34,20 @@ const STARTER_USDC = 1.2;
 
 // ---------- users ----------
 
-export async function ensureUser(userId: string, onStep?: OnStep) {
+const WALLETS_PER_IP_PER_DAY = 3;
+const WALLETS_PER_DAY = 25;
+
+export async function ensureUser(userId: string, onStep?: OnStep, ip = "unknown") {
   await migrate();
-  const acct = await userAccount(userId);
   const rows = (await sql()`select id from users where id = ${userId}`) as unknown[];
+  if (!rows.length) {
+    // Rate limits so visitors cannot drain the demo treasury (PRD section 12).
+    const [perIp] = (await sql()`select count(*)::int as n from users where ip = ${ip} and created_at > now() - interval '1 day'`) as { n: number }[];
+    const [all] = (await sql()`select count(*)::int as n from users where created_at > now() - interval '1 day'`) as { n: number }[];
+    if (perIp.n >= WALLETS_PER_IP_PER_DAY) throw new Error("Demo limit reached for your network today. Try again tomorrow, or use the MCP server with an existing wallet.");
+    if (all.n >= WALLETS_PER_DAY) throw new Error("The demo has handed out today's test USDC. Try again tomorrow.");
+  }
+  const acct = await userAccount(userId);
   if (!rows.length) {
     const treasury = await serverAccount(TREASURY);
     const have = (await chain.publicClient.readContract({ address: USDC.address as Hex, abi: erc20Abi, functionName: "balanceOf", args: [treasury.address as Hex] })) as bigint;
@@ -54,7 +64,7 @@ export async function ensureUser(userId: string, onStep?: OnStep) {
     await chain.publicClient.waitForTransactionReceipt({ hash: transactionHash as Hex });
     await onStep?.({ kind: "tx", label: `Funded your agent wallet with ${STARTER_USDC} test USDC`, tx: transactionHash });
     // Only remember the user once the starter funds actually landed.
-    await sql()`insert into users (id, wallet) values (${userId}, ${acct.address}) on conflict do nothing`;
+    await sql()`insert into users (id, wallet, ip) values (${userId}, ${acct.address}, ${ip}) on conflict do nothing`;
   }
   return { userId, wallet: acct.address as Hex };
 }
@@ -62,6 +72,11 @@ export async function ensureUser(userId: string, onStep?: OnStep) {
 // ---------- mandates ----------
 
 export async function draftMandate(userId: string, instruction: string) {
+  // Each draft is a SERV call; cap them so the demo cannot burn through reasoning credit.
+  await migrate();
+  const [mine] = (await sql()`select count(*)::int as n from mandates where user_id = ${userId} and created_at > now() - interval '1 day'`) as { n: number }[];
+  const [all] = (await sql()`select count(*)::int as n from mandates where created_at > now() - interval '1 day'`) as { n: number }[];
+  if (mine.n >= 20 || all.n >= 200) return { status: "error" as const, error: "Daily demo limit reached. Try again tomorrow.", record: null };
   const res = await compileMandate(instruction);
   if (res.status !== "ok") return res;
   const id = ("0x" + randomBytes(32).toString("hex")) as Hex;

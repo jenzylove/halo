@@ -4,7 +4,7 @@
 import { config } from "dotenv";
 config({ path: ".env.local" });
 
-import { writeFileSync } from "node:fs";
+import { readFileSync, writeFileSync } from "node:fs";
 import { checkout } from "../src/lib/check";
 import { adjudicate } from "../src/lib/claim";
 import { checkoutCases, claimCases } from "./cases";
@@ -41,7 +41,7 @@ interface Row {
 
 async function main() {
   const rows: Row[] = [];
-  for (const mode of MODES) {
+  for (const mode of process.env.REPORT_ONLY ? [] : MODES) {
     const raw = mode === "raw";
     const cc = checkoutCases();
     console.log(`${mode}: ${cc.length} checkout cases`);
@@ -109,7 +109,15 @@ async function main() {
     );
   }
 
-  const summary = MODES.flatMap((mode) =>
+  // Keep earlier results for modes not rerun this time, so SERV and raw end up in one table.
+  try {
+    const prev = JSON.parse(readFileSync("evals/results.json", "utf8")) as { rows: Row[] };
+    rows.push(...prev.rows.filter((r) => process.env.REPORT_ONLY || !MODES.includes(r.mode as "serv" | "raw")));
+  } catch {
+    // first run
+  }
+  const allModes = [...new Set(rows.map((r) => r.mode))];
+  const summary = allModes.flatMap((mode) =>
     ["checkout", "claim"].map((suite) => {
       const rs = rows.filter((r) => r.mode === mode && r.suite === suite);
       const ok = rs.filter((r) => r.ok).length;
@@ -119,6 +127,8 @@ async function main() {
         correct: `${ok}/${rs.length}`,
         pct: rs.length ? Math.round((ok / rs.length) * 100) : 0,
         falseApprovals: rs.filter((r) => r.falseApproval).length,
+        // Money paid when it should not have been, or the wrong amount: the costly error for a guarantor.
+        wrongPayouts: suite === "claim" ? rs.filter((r) => r.got !== "error" && r.got !== "no payout" && r.got !== r.expect).length : 0,
         errors: rs.filter((r) => r.got === "error").length,
         avgMs: Math.round(rs.reduce((a, r) => a + r.ms, 0) / Math.max(rs.length, 1)),
         avgTokens: Math.round(rs.reduce((a, r) => a + r.tokens, 0) / Math.max(rs.length, 1)),
@@ -134,9 +144,11 @@ async function main() {
     "",
     "PRD G2 bar: zero false approvals on cases that must be declined, and at least 90% correct overall.",
     "",
-    "| Mode | Suite | Correct | % | False approvals | Errors | Avg ms | Avg tokens |",
-    "|---|---|---|---|---|---|---|---|",
-    ...summary.map((s) => `| ${s.mode} | ${s.suite} | ${s.correct} | ${s.pct}% | ${s.falseApprovals} | ${s.errors} | ${s.avgMs} | ${s.avgTokens} |`),
+    "False approvals: a purchase that must be declined was approved. Wrong payouts: money paid on a claim that deserved none, or the wrong amount.",
+    "",
+    "| Mode | Suite | Correct | % | False approvals | Wrong payouts | Errors | Avg ms | Avg tokens |",
+    "|---|---|---|---|---|---|---|---|---|",
+    ...summary.map((s) => `| ${s.mode} | ${s.suite} | ${s.correct} | ${s.pct}% | ${s.suite === "checkout" ? s.falseApprovals : "n/a"} | ${s.suite === "claim" ? s.wrongPayouts : "n/a"} | ${s.errors} | ${s.avgMs} | ${s.avgTokens} |`),
     "",
     "## Misses",
     "",

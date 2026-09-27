@@ -60,7 +60,7 @@ function build(uid: string, origin: string) {
     { description: "Lock a mandate onchain after the user confirmed it. Required before any purchase.", inputSchema: { mandate_id: z.string() } },
     async ({ mandate_id }) => {
       const c = collect();
-      await ensureUser(uid, c.onStep);
+      await ensureUser(uid, c.onStep, `mcp:${uid}`);
       await confirmMandate(uid, mandate_id as `0x${string}`, c.onStep);
       return text(describe(c.steps));
     },

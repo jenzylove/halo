@@ -1,12 +1,12 @@
 allowBuilds:
-  '@coinbase/x402': set this to true or false
-  '@opensea/seaport-js': set this to true or false
-  bigint-buffer: set this to true or false
+  '@coinbase/x402': false
+  '@opensea/seaport-js': false
+  bigint-buffer: false
   bufferutil: false
   esbuild: true
   keccak: false
-  opensea-js: set this to true or false
-  secp256k1: set this to true or false
+  opensea-js: false
+  secp256k1: false
   sharp: false
   unrs-resolver: false
   utf-8-validate: false

@@ -28,7 +28,7 @@ interface Purchase {
 }
 
 interface Me {
-  userId: string;
+  apiKey: string;
   wallet: string | null;
   mandates: { id: string; instruction: string; tx: string | null; created_at: string }[];
   purchases: Purchase[];

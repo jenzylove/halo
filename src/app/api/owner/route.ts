@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { verifyMessage, type Hex } from "viem";
 import { linkOwner, ownerOf } from "@/lib/halo";
 import { agentBalance } from "@/lib/relay";
@@ -6,8 +7,10 @@ import { userAccount } from "@/lib/wallets";
 
 export const maxDuration = 60;
 
+// The session id never appears in the message; a one way fingerprint binds the signature to this session.
+const fingerprint = (uid: string) => createHash("sha256").update(`halo:${uid}`).digest("hex").slice(0, 16);
 const message = (agent: string, uid: string, issued: string) =>
-  `Link my wallet as the owner of my Halo agent.\n\nAgent wallet: ${agent}\nSession: ${uid}\nIssued: ${issued}\n\nRefunds will be forwarded to this wallet. This signature costs nothing.`;
+  `Link my wallet as the owner of my Halo agent.\n\nAgent wallet: ${agent}\nSession: ${fingerprint(uid)}\nIssued: ${issued}\n\nRefunds will be forwarded to this wallet. This signature costs nothing.`;
 
 // The owner layer: who the agent belongs to, what it holds, and the message to sign to link a wallet.
 export async function GET() {

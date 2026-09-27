@@ -65,7 +65,7 @@ A 1% fee (minimum 0.02 USDC) on every covered purchase goes into the pool. Halo 
 
 - **Try it:** [/try](https://halo-nine-chi.vercel.app/try), no setup.
 - **From Claude or any MCP client:** [/docs](https://halo-nine-chi.vercel.app/docs) gives you a personal MCP URL with tools to create and confirm mandates, pay, shop, claim and check status.
-- **From your agent's code:** `haloFetch(url, { user, mandateId })` in [sdk/halo.ts](sdk/halo.ts), example in [examples/buy.mts](examples/buy.mts).
+- **From your agent's code:** `haloFetch(url, { key, mandateId })` in [sdk/halo.ts](sdk/halo.ts), example in [examples/buy.mts](examples/buy.mts). It covers merchants that publish a Halo catalog and identity file (the demo stores today); plain x402 endpoints without one are not covered yet.
 
 ## Run it yourself
 

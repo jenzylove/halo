@@ -177,8 +177,13 @@ export default function Docs() {
 
         <H3>4. From your agent&apos;s code (SDK)</H3>
         <P>
-          Replace the x402 payment call with <C>haloFetch</C>. Halo checks the offer against the user&apos;s mandate, pays only if it
-          fits, and pays the user back if the delivery is wrong.
+          Call <C>haloFetch</C> where your agent would pay an x402 URL. Halo checks the offer against the user&apos;s mandate, pays
+          only if it fits, and pays the user back if the delivery is wrong.
+        </P>
+        <P>
+          Scope today: Halo builds the offer it checks from the merchant&apos;s Halo catalog (<C>/m/&#123;slug&#125;/catalog</C>) and
+          identity file (<C>/.well-known/halo.json</C>), so it covers merchants that publish both. The four demo stores do. Plain
+          x402 endpoints without a catalog are not covered yet.
         </P>
         <Code>{`import { haloFetch } from "./sdk/halo";
 

@@ -233,7 +233,7 @@ export default async function Home() {
         <InView className="mx-auto grid max-w-6xl gap-px overflow-hidden rounded-2xl border hair bg-line px-0 md:grid-cols-3">
           {[
             ["For people", "Tell your assistant what to buy. Add Halo's MCP server to Claude or ChatGPT and every purchase it makes is covered.", "/docs", "Get your MCP link"],
-            ["For agent builders", "Swap your x402 payment call for haloFetch. Your users get their money back when your agent gets it wrong.", "/docs", "Read the SDK"],
+            ["For agent builders", "Call haloFetch instead of paying x402 merchants directly. Halo checks, pays and guarantees. Today it covers merchants that publish a Halo catalog.", "/docs", "Read the SDK"],
             ["For merchants", "Publish your payout address and post a bond. Protected agents prefer bonded merchants, and honest ones never lose a cent.", "/docs", "Become a Halo merchant"],
           ].map(([t, b, href, cta], i) => (
             <Link key={t} href={href} className="reveal group bg-bg p-8 transition hover:bg-soft" style={d(i * 0.1)}>

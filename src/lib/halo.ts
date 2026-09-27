@@ -175,7 +175,7 @@ export async function purchase(userId: string, mandateId: Hex, url: string, onSt
   const amount = BigInt(req.maxAmountRequired);
   const approvalTx = await chain.recordApproval(approvalId, mandateId, req.payTo as Hex, amount);
   await onStep({ kind: "tx", label: "Approval recorded", tx: approvalTx });
-  const { fee } = await chain.readApproval(approvalId);
+  const fee = await chain.feeFor(amount);
   const feeTx = await chain.payFee(userId, approvalId, fee);
   await onStep({ kind: "tx", label: `Halo fee ${chain.fromUnits(fee).toFixed(2)} USDC paid, purchase covered`, tx: feeTx });
   await sql()`update purchases set status = 'covered', fee = ${chain.fromUnits(fee)}, approval_tx = ${approvalTx}, fee_tx = ${feeTx}

@@ -21,10 +21,29 @@ async function operatorCall(functionName: string, args: readonly unknown[]): Pro
   const op = await operatorAccount();
   // @ts-expect-error generic function name over the generated ABI
   const data = encodeFunctionData({ abi: haloAbi, functionName, args });
-  const hash = await sendFrom(op, poolAddress(), data);
-  const receipt = await publicClient.waitForTransactionReceipt({ hash });
-  if (receipt.status !== "success") throw new Error(`${functionName} reverted: ${hash}`);
-  return hash;
+  // RPC nodes behind a load balancer can lag a block behind the previous transaction; retry stale gas estimates.
+  for (let attempt = 0; ; attempt++) {
+    try {
+      const hash = await sendFrom(op, poolAddress(), data);
+      const receipt = await publicClient.waitForTransactionReceipt({ hash });
+      if (receipt.status !== "success") throw new Error(`${functionName} reverted: ${hash}`);
+      return hash;
+    } catch (e) {
+      if (attempt >= 4 || !/estimate gas|nonce/i.test(String(e))) throw e;
+      await new Promise((r) => setTimeout(r, 1500 * (attempt + 1)));
+    }
+  }
+}
+
+let paramsCache: { feeBps: number; minFee: bigint } | null = null;
+/** Fee for an approval, from the contract's fixed parameters (never from a possibly stale approval read). */
+export async function feeFor(amount: bigint): Promise<bigint> {
+  if (!paramsCache) {
+    const p = (await publicClient.readContract({ address: poolAddress(), abi: haloAbi, functionName: "params" })) as readonly unknown[];
+    paramsCache = { feeBps: Number(p[0]), minFee: BigInt(p[1] as bigint) };
+  }
+  const fee = (amount * BigInt(paramsCache.feeBps)) / 10_000n;
+  return fee < paramsCache.minFee ? paramsCache.minFee : fee;
 }
 
 /** The user's agent wallet signs the mandate (EIP-712) so the operator can lock it onchain without the user paying gas. */

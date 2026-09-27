@@ -89,3 +89,22 @@ Every MVP requirement in [PRD.md](PRD.md), checked against the live build on 202
 2. **SERV intermittently rejects its own `max_tokens`** (sets it above the model limit). Halo passes an explicit output cap and retries.
 3. **Where SERV helped measurably:** on claims, where money moves, SERV made 0 wrong payouts vs 2 in raw mode. On checkout, raw was slightly more accurate and much faster; both had 0 false approvals.
 4. **Testnet USDC is scarce** (faucet limit about 10 per day), so demo prices are scaled down 10x and merchant revenue is recycled back into bonds and the treasury.
+
+---
+
+# Release readiness audit, 2026-09-27 (independent pass)
+
+A separate adversarial audit of commit `ba27d7f` against the hackathon rules and the live deployment found 10 issues beyond the PRD. All 10 were fixed and verified on production the same evening.
+
+| # | Severity | Finding | Fix | Verified |
+|---|---|---|---|---|
+| 1 | High | Demo treasury would run dry after 3 to 5 new visitors; judging lasts a week | Starter 1.0 USDC; topped up agents skip the treasury; automatic refill (recycle merchant revenue, then the Coinbase faucet); daily cron; friendly message instead of a raw error | Refill ran live: treasury 1.60 → 2.55 USDC, slashed bonds restored |
+| 2 | High | The session id was a displayed bearer credential (MCP URL, SDK header); a holder could re-link the owner and withdraw | MCP and SDK use a separate API key (`hk_…`); the session id is never shown or signed; ownership locks once linked | Old session id rejected by MCP and SDK; re-link to another wallet returns 409 |
+| 3 | Medium | Any session could run another session's mandate | Mandate ownership checked in `runAgent` and `purchase` | Foreign mandate returns "unknown mandate" |
+| 4 | Medium | SDK copy implied any x402 merchant | Copy states the real scope: merchants that publish a Halo catalog | Landing, docs, README |
+| 5 | Medium | `forge test` failed on a fresh clone | `contracts/setup.sh` pins OpenZeppelin v5.7.0 and forge-std v1.16.2 | 30/30 from a clean copy |
+| 6 | Medium | Contract owner key was a hot server key | Ownership moved to an offline cold key ([tx](https://sepolia.basescan.org/tx/0x944abd3fda1663c1b6fe30cb3650c20c8f57267538c91411cf05c92b2bd8cb19)) | `owner()` = cold key |
+| 7 | Low | "Hashed next to the onchain decision" overstated | Copy says exactly what is anchored | README, docs |
+| 8 | Low | Reasoning records readable by anyone with an id | Records only for the owning session | Foreign id returns 404 |
+| 9 | Low | Every page view created a CDP wallet | Wallet created on confirm or explicit connect only | Fresh visitor gets `agent: null` |
+| 10 | Low | Standalone `tsc` failed before type generation; lint noise from vendored libs | `pnpm typecheck` runs `next typegen` first; lint scoped to app code | typecheck 0 errors, lint 0 problems |

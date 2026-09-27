@@ -39,7 +39,7 @@ Every step is a real transaction on Base Sepolia. Prices are scaled down for tes
 
 | Piece | Role in Halo |
 |---|---|
-| **SERV Reasoning** | Mandate compiler, offer checker, injection screen and claims adjuster. Structured outputs for every decision, the Shadow Agent validating mandates, checks and verdicts, PromptGuard protecting Halo's own prompts. Every call is stored as a reasoning record and hashed next to the onchain decision. |
+| **SERV Reasoning** | Mandate compiler, offer checker, injection screen and claims adjuster. Structured outputs for every decision, the Shadow Agent validating mandates, checks and verdicts, PromptGuard protecting Halo's own prompts. Every call is stored as a reasoning record with a content hash; mandate terms, deliveries and claim verdicts are anchored onchain by hash. |
 | **Coinbase AgentKit / CDP wallets** | Every user gets a CDP server wallet for their agent. It signs mandates (EIP-712), fees (EIP-3009, so users need no ETH) and x402 payments. Halo's operator is a CDP wallet too. |
 | **x402** | How the agent pays merchants. Halo wraps the x402 flow: check first, then pay. |
 | **HaloPool** (Solidity, Base Sepolia) | Mandates, approvals, fees, claims with caps, merchant bonds and slashing, and a solvency limit of 20x pool capital. 30 Foundry tests. |

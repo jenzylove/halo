@@ -229,8 +229,9 @@ result.steps    // every decision and transaction, with reasons`}</Code>
           Where SERV decides, and how well
         </H2>
         <P>
-          Every judgment in Halo is a SERV Reasoning call with structured output, stored as a reasoning record and hashed next to
-          the onchain decision. Rules that must never bend (money, quantities, expiry) stay in code.
+          Every judgment in Halo is a SERV Reasoning call with structured output, stored as a reasoning record with a content
+          hash. Onchain, Halo anchors the hash of each mandate&apos;s terms, of each delivery, and of each claim verdict (which
+          includes the hashes of the records behind it). Rules that must never bend (money, quantities, expiry) stay in code.
         </P>
         <Table
           head={["Call", "SERV features", "Decides"]}

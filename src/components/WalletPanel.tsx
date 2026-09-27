@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { encodeFunctionData, erc20Abi, parseUnits, type Hex } from "viem";
+import { parseUnits } from "viem";
 
 // The owner layer in the UI: connect a browser wallet, link it to your agent, top up, withdraw.
 // No wallet library: a plain EIP-1193 provider (MetaMask, Coinbase Wallet, Rabby).
@@ -72,15 +72,47 @@ export function WalletPanel({ compact = false }: { compact?: boolean }) {
   async function topUp() {
     const p = eth();
     if (!p || !s?.owner || !s.agent) return;
-    setBusy("Waiting for your wallet");
+    setBusy("Sign the top up in your wallet (no gas needed)");
     setNote(null);
     try {
       await ensureChain(p);
       const [from] = (await p.request({ method: "eth_requestAccounts" })) as string[];
-      const data = encodeFunctionData({ abi: erc20Abi, functionName: "transfer", args: [s.agent as Hex, parseUnits(amount || "0", 6)] });
-      const tx = (await p.request({ method: "eth_sendTransaction", params: [{ from, to: USDC, data }] })) as string;
-      setNote({ text: `Sent ${amount} USDC to your agent.`, tx });
-      setS((prev) => (prev ? { ...prev, agentUsdc: prev.agentUsdc + Number(amount || 0) } : prev));
+      const value = parseUnits(amount || "0", 6).toString();
+      const validBefore = String(Math.floor(Date.now() / 1000) + 3600);
+      const nonce = `0x${Array.from(crypto.getRandomValues(new Uint8Array(32)), (b) => b.toString(16).padStart(2, "0")).join("")}`;
+      const typed = {
+        types: {
+          EIP712Domain: [
+            { name: "name", type: "string" },
+            { name: "version", type: "string" },
+            { name: "chainId", type: "uint256" },
+            { name: "verifyingContract", type: "address" },
+          ],
+          TransferWithAuthorization: [
+            { name: "from", type: "address" },
+            { name: "to", type: "address" },
+            { name: "value", type: "uint256" },
+            { name: "validAfter", type: "uint256" },
+            { name: "validBefore", type: "uint256" },
+            { name: "nonce", type: "bytes32" },
+          ],
+        },
+        primaryType: "TransferWithAuthorization",
+        domain: { name: "USDC", version: "2", chainId: 84532, verifyingContract: USDC },
+        message: { from, to: s.agent, value, validAfter: "0", validBefore, nonce },
+      };
+      const signature = (await p.request({ method: "eth_signTypedData_v4", params: [from, JSON.stringify(typed)] })) as string;
+      setBusy("Halo is sending it to your agent");
+      const r = await fetch("/api/owner/topup", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ value, validBefore, nonce, signature }),
+      }).then((r) => r.json());
+      if (r.error) setNote({ text: r.error, bad: true });
+      else {
+        setNote({ text: `Sent ${r.amount.toFixed(2)} USDC to your agent. You paid no gas.`, tx: r.tx });
+        setS((prev) => (prev ? { ...prev, agentUsdc: prev.agentUsdc + r.amount } : prev));
+      }
     } catch (e) {
       setNote({ text: (e as { message?: string }).message ?? String(e), bad: true });
     } finally {

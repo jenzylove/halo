@@ -1,5 +1,6 @@
 import { randomBytes } from "node:crypto";
-import { encodeFunctionData, erc20Abi, type Hex } from "viem";
+import { createWalletClient, encodeFunctionData, erc20Abi, http, type Hex } from "viem";
+import { baseSepolia } from "viem/chains";
 import { createPaymentHeader } from "x402/client";
 import type { PaymentRequirements } from "x402/types";
 import * as chain from "./chain";
@@ -182,7 +183,8 @@ export async function purchase(userId: string, mandateId: Hex, url: string, onSt
     where id = ${approvalId}`;
 
   // 5. Pay the merchant over x402 (C1).
-  const payer = asViemAccount(await userAccount(userId));
+  // x402 signs through a viem wallet client; the account inside is the user's CDP wallet.
+  const payer = createWalletClient({ account: asViemAccount(await userAccount(userId)), chain: baseSepolia, transport: http() });
   const header = await createPaymentHeader(payer as never, 1, req);
   const paid = await fetch(url, { headers: { "X-PAYMENT": header } });
   if (!paid.ok) return { status: "error" as const, error: `payment failed: ${paid.status} ${await paid.text()}` };

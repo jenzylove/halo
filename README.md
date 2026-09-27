@@ -72,7 +72,8 @@ A 1% fee (minimum 0.02 USDC) on every covered purchase goes into the pool. Halo 
 ```bash
 pnpm install
 cp .env.example .env.local        # SERV, CDP and Postgres keys
-cd contracts && forge test        # 30 tests
+cd contracts && sh setup.sh       # pinned OpenZeppelin v5.7.0 and forge-std v1.16.2
+forge test                        # 30 tests
 cd .. && pnpm dev
 npx tsx evals/run.ts              # eval suite, SERV and raw modes
 ```

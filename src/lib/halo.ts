@@ -37,7 +37,6 @@ export async function ensureUser(userId: string, onStep?: OnStep) {
   const acct = await userAccount(userId);
   const rows = (await sql()`select id from users where id = ${userId}`) as unknown[];
   if (!rows.length) {
-    await sql()`insert into users (id, wallet) values (${userId}, ${acct.address}) on conflict do nothing`;
     const treasury = await serverAccount(TREASURY);
     const data = encodeFunctionData({ abi: erc20Abi, functionName: "transfer", args: [acct.address, chain.toUnits(STARTER_USDC)] });
     const { transactionHash } = await (await import("./wallets")).cdpClient().evm.sendTransaction({
@@ -47,6 +46,8 @@ export async function ensureUser(userId: string, onStep?: OnStep) {
     });
     await chain.publicClient.waitForTransactionReceipt({ hash: transactionHash as Hex });
     await onStep?.({ kind: "tx", label: `Funded your agent wallet with ${STARTER_USDC} test USDC`, tx: transactionHash });
+    // Only remember the user once the starter funds actually landed.
+    await sql()`insert into users (id, wallet) values (${userId}, ${acct.address}) on conflict do nothing`;
   }
   return { userId, wallet: acct.address as Hex };
 }

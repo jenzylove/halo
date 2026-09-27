@@ -22,6 +22,9 @@ export async function recycle(treasury: Hex): Promise<{ swept: number; bonds: nu
   const wait = (hash: Hex) => publicClient.waitForTransactionReceipt({ hash });
   const balance = (a: Hex) => publicClient.readContract({ address: usdc, abi: erc20Abi, functionName: "balanceOf", args: [a] });
 
+  // Public RPC nodes can lag a block behind our own transactions, so track the relayer's balance arithmetically
+  // from one read taken before any transfer, instead of re-reading it between steps.
+  let available = await balance(relayer.address);
   let swept = 0n;
   for (const m of MERCHANTS) {
     const k = merchantKey(m.slug);
@@ -56,6 +59,7 @@ export async function recycle(treasury: Hex): Promise<{ swept: number; bonds: nu
       }),
     );
     swept += amount;
+    available += amount;
   }
 
   // Top bonds back up to target for verified merchants.
@@ -63,13 +67,14 @@ export async function recycle(treasury: Hex): Promise<{ swept: number; bonds: nu
   for (const m of MERCHANTS.filter((m) => m.verified)) {
     const [bond] = (await publicClient.readContract({ address: poolAddress(), abi: poolAbi, functionName: "merchants", args: [m.payTo] })) as [bigint, bigint, boolean];
     const need = units(m.bond) - bond;
-    if (need <= 0n || (await balance(relayer.address)) < need) continue;
+    if (need <= 0n || available < need) continue;
     await wait(await wallet.writeContract({ address: poolAddress(), abi: poolAbi, functionName: "depositBond", args: [m.payTo, need] }));
     bonds += need;
+    available -= need;
   }
 
   // Everything else goes back to the treasury.
-  const rest = await balance(relayer.address);
+  const rest = available;
   if (rest > 0n) await wait(await wallet.writeContract({ address: usdc, abi: erc20Abi, functionName: "transfer", args: [treasury, rest] }));
   return { swept: Number(swept) / 1e6, bonds: Number(bonds) / 1e6, toTreasury: Number(rest) / 1e6 };
 }

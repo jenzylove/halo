@@ -1,4 +1,4 @@
-import { AgentKit, CdpEvmWalletProvider, erc20ActionProvider } from "@coinbase/agentkit";
+import type { AgentKit } from "@coinbase/agentkit";
 import type { Hex } from "viem";
 import { USDC } from "./x402server";
 
@@ -10,6 +10,8 @@ const kits = new Map<string, AgentKit>();
 async function kitFor(address: string): Promise<AgentKit> {
   const hit = kits.get(address);
   if (hit) return hit;
+  // Loaded on first use: AgentKit mixes CommonJS and ES modules and must not load at build time.
+  const { AgentKit, CdpEvmWalletProvider, erc20ActionProvider } = await import("@coinbase/agentkit");
   const walletProvider = await CdpEvmWalletProvider.configureWithWallet({
     apiKeyId: process.env.CDP_API_KEY_ID,
     apiKeySecret: process.env.CDP_API_KEY_SECRET,

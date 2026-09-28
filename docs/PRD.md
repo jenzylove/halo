@@ -1,7 +1,7 @@
 # Halo: PRD
 
 **Agent Purchase Protection for stablecoin agents.**
-Working name: Halo. Track: Coinbase AgentKit (OpenServ SERV Hackathon). Status: draft v1, 2026-09-27.
+Working name: Halo. Track: Open Track (OpenServ SERV Hackathon; planned for Coinbase AgentKit, moved after the third audit). Status: draft v1, 2026-09-27.
 
 This document is the scorecard. Every requirement has an ID and an acceptance test. At the end of the build we audit the product against this file, requirement by requirement, and nothing counts as done without evidence (a link, a transaction, a test run).
 
@@ -100,7 +100,7 @@ Lifecycle states of a purchase: `mandated → checked → approved → covered (
 | ID | Requirement | Acceptance test |
 |---|---|---|
 | C1 | Halo client wraps x402: on a 402 response it runs the checkout check before paying | A demo purchase over x402 on Base Sepolia completes only after approval |
-| C2 | The agent wallet is an AgentKit (CDP) wallet | Wallet address resolves to a CDP wallet; purchases signed by it |
+| C2 | The agent wallet is a Coinbase CDP server wallet | Wallet address resolves to a CDP wallet; purchases signed by it |
 | C3 | The delivered payload (x402 response body) is captured and hashed at payment time | Delivery hash stored and linked to the approval |
 | C4 | Fee is paid to the pool in the same flow as the purchase | Pool balance increases by the fee on every covered purchase |
 
@@ -130,7 +130,7 @@ Lifecycle states of a purchase: `mandated → checked → approved → covered (
 | F1 | Pool contract holds USDC, receives fees and slashed bonds, pays claims | Contract tests cover every money path |
 | F2 | Solvency rule: open coverage never exceeds pool balance times the leverage limit | An approval that would break the limit is refused onchain |
 | F3 | Claim window: coverage closes a set time after delivery and frees capacity | Expired approvals no longer count toward open coverage |
-| F4 | Only the Halo operator (an AgentKit wallet) can record approvals and resolve claims | Calls from any other address revert |
+| F4 | Only the Halo operator (a Coinbase CDP wallet) can record approvals and resolve claims | Calls from any other address revert |
 
 ### G. SERV and measurement
 
@@ -184,6 +184,8 @@ Lifecycle states of a purchase: `mandated → checked → approved → covered (
 **At scale (illustrative):** 10M USDC of covered volume a month earns 100k in fees against roughly 15k net claims and 1k SERV cost.
 
 **Solvency rules (enforced in the contract)**
+
+These are the production targets. The live testnet pool runs scaled down 10x (claim cap 25, user cap 50 per 30 days, new user cap 10) at **full reserve (1x)** since the second audit, with a 1 day claim window so the demo resolves quickly.
 
 1. Open coverage (approved, fee paid, inside the claim window) must stay below pool balance times 20.
 2. Per claim cap: 250 USDC. Per user cap: 500 USDC per 30 days.

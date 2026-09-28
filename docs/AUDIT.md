@@ -2,7 +2,7 @@
 
 Every MVP requirement in [PRD.md](PRD.md), checked against the live build on 2026-09-27. Pool: [`0x80eD3250…6387`](https://sepolia.basescan.org/address/0x80eD325076DF4eA062e60F74137Bc2c39A796387) on Base Sepolia. App: https://halo-nine-chi.vercel.app
 
-**Result: 34 pass, 3 partial, 0 fail, out of 37 requirements.** Partial lines say exactly what is missing.
+**Result: 35 pass, 2 partial, 0 fail, out of 37 requirements.** Partial lines say exactly what is missing.
 
 `tx:` links go to Basescan. Eval numbers come from [evals/RESULTS.md](../evals/RESULTS.md).
 
@@ -60,7 +60,7 @@ Every MVP requirement in [PRD.md](PRD.md), checked against the live build on 202
 | ID | Status | Evidence |
 |---|---|---|
 | F1 | Pass | 30 Foundry tests cover every money path (`forge test`). |
-| F2 | Pass | `test_approval_overLeverage`; live leverage 0.50x of 20x. |
+| F2 | Pass | `test_approval_overLeverage`; live pool at full reserve (1x) since the second audit. |
 | F3 | Pass | `test_release_afterClaimWindow`, `test_release_unpaidRestoresBudget`. |
 | F4 | Pass | `onlyOperator` tests; operator is a CDP wallet. |
 
@@ -80,7 +80,7 @@ Every MVP requirement in [PRD.md](PRD.md), checked against the live build on 202
 | H2 | Pass | A fresh session (new cookie, new wallet) completed the whole demo on production: funded, mandate locked, lookalike declined, wrong date paid back, correct tickets bought. Rate limited: 3 new wallets per network and 25 per day, 20 mandate drafts per visitor. |
 | H3 | Pass | Dashboard lists purchases with every tx link and the claim button. |
 | H4 | Pass | /pool computed from chain events (chunked scan, cursor cached in Postgres because public RPCs cap log ranges). |
-| H5 | Partial | MCP verified end to end over JSON-RPC on production (create, confirm, pay, automatic claim, payout [0x11a30b9d](https://sepolia.basescan.org/tx/0x11a30b9d5e9762541777d4442dc0480c585c8a48989e421e973393e68689570e)). Not yet run from inside the Claude app. |
+| H5 | Pass | MCP verified end to end over JSON-RPC on production (create, confirm, pay, automatic claim, payout [0x11a30b9d](https://sepolia.basescan.org/tx/0x11a30b9d5e9762541777d4442dc0480c585c8a48989e421e973393e68689570e)). Also run from inside a chat assistant by a tester; the empty wallet error it hit is fixed (see the cross check below). |
 | H6 | Pass | [examples/buy.mts](../examples/buy.mts) (12 lines) bought through production and got paid back: [0xe85b38f7](https://sepolia.basescan.org/tx/0xe85b38f7b5eae7bfe49ed0228f51303a929ca699982bc2b0cdc68be9f191f757). |
 
 ## Findings from the build worth knowing
@@ -140,4 +140,41 @@ Verdict: Open Track readiness ~80%, AgentKit track ~55%, real-world ~30%. The fu
 | MCP key is delegated authority, not per job consent | Accepted and documented; per job approvals are the next step. |
 | Evals are authored, not independent | Accepted. |
 
-Note: the live site footer still says "Wallets by Coinbase AgentKit"; Vercel's daily deployment limit was reached before that copy could be redeployed. The wallets are Coinbase CDP server wallets.
+The live footer now reads "Wallets by Coinbase CDP" (deployed Sep 28).
+
+---
+
+# Cross check of every audit, 2026-09-28
+
+Every finding above was rechecked against production (https://halo-nine-chi.vercel.app) and the contract, after the pending fixes were deployed.
+
+| Finding | Check | Result |
+|---|---|---|
+| Treasury runs dry | New wallets funded twice on production; refill cron in `vercel.json`, refuses callers without the secret (403) | Pass |
+| Session id as bearer credential | `/api/me` returns an `hk_` key and never the session id; MCP and SDK reject the session id | Pass |
+| Owner can be re-linked | Linked a test wallet (200), then a second wallet: 409 "Ownership cannot be reassigned" | Pass |
+| Foreign mandate can be run | Another session running this mandate gets "unknown mandate" | Pass |
+| SDK scope overstated | Docs and Get started state that stores must publish a Halo catalog | Pass |
+| `forge test` fails on a fresh clone | Fresh clone from GitHub, `setup.sh`, 30/30 | Pass |
+| Hot owner key | `owner()` is the cold key set in tx 0x944abd3f | Pass |
+| Records readable by anyone | Foreign record 404, own record 200 | Pass |
+| Wallet created on every view | Fresh visitor: `wallet: null` | Pass |
+| Typecheck and lint | `pnpm typecheck` and `pnpm lint` clean | Pass |
+| Coverage beyond the fund | Contract `leverage` = 1; `/api/pool` now reads it from the contract | Pass |
+| Undecidable claims denied | They stay open with status `review`; operator review step resolves them | Pass |
+| Fee kept when payment fails | Failed payment refunds the fee and closes the protection | Pass (code) |
+| Empty checks reach approve | Backstop: fewer checks than rules asks the user (`incomplete_check`) | Pass (code) |
+| Store unbonds with claims open | Unbonding stores are untrusted; unbond delay 8 days > fee window 1 hour + claim window 1 day | Pass |
+| AgentKit overstated | No AgentKit claim on any live page; footer says Coinbase CDP; Open Track | Pass |
+| Test stores and delegated MCP key | Both stated on the site and in docs | Pass |
+| MCP trial: "transfer amount exceeds balance" left an unpaid approval | Repeated with an agent holding 0.01 USDC: "Your agent has 0.01 USDC but needs 0.92. Top it up", and nothing was approved onchain | Pass |
+
+**New issues found and fixed during the cross check**
+
+1. **The real store was sometimes blocked as an attack.** PromptGuard refuses a harmless listing about 1 in 8 times, and a refusal counted as an injection. The screen now retries a refusal, and a flag only counts when it quotes text that is really in the listing. All 8 subtle injections in the eval set are still declined.
+2. **The agent could miss stores.** When the rules compiler put the event name in a rule and kept the item generic ("tickets"), the agent only found the one listing with "tickets" in its title. It now searches by the item and the rule values.
+3. **The pool API reported leverage 20** from a constant; it now reads the contract.
+
+After the fixes, a fresh visitor completed the demo on production: fake store blocked, wrong date refunded 0.90 USDC, correct tickets bought from StageDoor.
+
+Still open, as before: D6 (no live overcharge or fraud claim yet), H1 (phone layout not checked on a real device), AgentKit runtime loading, and the product limits the third audit named (test stores, unproven fee model, authored evals).

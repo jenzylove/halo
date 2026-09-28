@@ -9,7 +9,7 @@ Phases run in order. A phase is done only when its exit check passes; exit check
 | App, API, MCP server | Next.js on Vercel (TypeScript) |
 | Storage | Postgres (Neon) for mandates, records, evals; chain is the source of truth for money |
 | Contracts | Solidity + Foundry, Base Sepolia, Circle test USDC |
-| Wallets | Coinbase CDP / AgentKit: one operator wallet (Halo adjuster), one wallet per demo user agent |
+| Wallets | Coinbase CDP server wallets: one operator wallet (Halo adjuster), one wallet per demo user agent |
 | Payments | x402 (merchant middleware + client), public facilitator for Base Sepolia |
 | Reasoning | SERV via the OpenAI SDK pointed at `inference-api.openserv.ai` |
 

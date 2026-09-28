@@ -123,13 +123,20 @@ export async function readApproval(approvalId: Hex) {
 export async function poolStats() {
   const read = (functionName: "poolBalance" | "openCoverage" | "totalBonds" | "capacity") =>
     publicClient.readContract({ address: poolAddress(), abi: haloAbi, functionName }) as Promise<bigint>;
-  const [balance, open, bonds, capacity] = await Promise.all([
+  const [balance, open, bonds, capacity, params] = await Promise.all([
     read("poolBalance"),
     read("openCoverage"),
     read("totalBonds"),
     read("capacity"),
+    publicClient.readContract({ address: poolAddress(), abi: haloAbi, functionName: "params" }) as Promise<readonly unknown[]>,
   ]);
-  return { balance: fromUnits(balance), openCoverage: fromUnits(open), bonds: fromUnits(bonds), capacity: fromUnits(capacity) };
+  return {
+    balance: fromUnits(balance),
+    openCoverage: fromUnits(open),
+    bonds: fromUnits(bonds),
+    capacity: fromUnits(capacity),
+    leverage: Number(params[2]),
+  };
 }
 
 /** Payout actually sent to the user, read from the ClaimResolved event. */

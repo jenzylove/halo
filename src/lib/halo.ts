@@ -171,7 +171,12 @@ export async function runAgent(userId: string, mandateId: Hex, origin: string, o
   // A mandate can only be spent by the session (or API key) that wrote it.
   if (!m || m.user_id !== userId) throw new Error("unknown mandate");
   if (!m.tx) throw new Error("mandate not confirmed");
-  const words = m.terms.item.toLowerCase().split(/\W+/).filter((w) => w.length > 3);
+  // Search by the item and the rule values: the compiler may file the event name as a rule and keep the item generic.
+  const words = [m.terms.item, ...m.terms.constraints.map((c) => c.value)]
+    .join(" ")
+    .toLowerCase()
+    .split(/\W+/)
+    .filter((w) => w.length > 3 && /[a-z]/.test(w));
   const candidates: { merchant: MerchantDef; listing: Listing }[] = [];
   for (const merchant of MERCHANTS)
     for (const listing of merchant.listings) {
@@ -179,7 +184,13 @@ export async function runAgent(userId: string, mandateId: Hex, origin: string, o
       if (words.some((w) => text.includes(w))) candidates.push({ merchant, listing });
     }
   candidates.sort((a, b) => a.listing.unitPrice - b.listing.unitPrice);
-  await onStep({ kind: "info", text: `Your agent found ${candidates.length} stores selling this and tries the cheapest first.` });
+  await onStep({
+    kind: "info",
+    text:
+      candidates.length === 1
+        ? "Your agent found 1 store selling this."
+        : `Your agent found ${candidates.length} stores selling this and tries the cheapest first.`,
+  });
 
   let refunded = 0;
   for (const c of candidates) {

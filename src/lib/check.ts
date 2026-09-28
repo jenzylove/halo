@@ -95,15 +95,23 @@ export async function checkout(offer: Offer, ctx: CheckContext): Promise<CheckRe
     hard.push({ code: "injection_rule", text: "The listing contains instructions aimed at the agent." });
 
   // B5: injection screen. PromptGuard protects Halo's own instructions; this SERV step looks for instructions hidden in the listing.
-  const screenCall = servJson<{ addresses_automated_reader: boolean; quote: string }>({
-    kind: "injection_screen",
-    name: "injection_screen",
-    schema: SCREEN_SCHEMA,
-    system: SCREEN_SYSTEM,
-    input: merchantText,
-    guard: true,
-    raw: ctx.raw,
-  });
+  // PromptGuard sometimes refuses a harmless listing, so a refusal only counts once it repeats.
+  const screenCall = (async () => {
+    let r;
+    for (let i = 0; i < 3; i++) {
+      r = await servJson<{ addresses_automated_reader: boolean; quote: string }>({
+        kind: "injection_screen",
+        name: "injection_screen",
+        schema: SCREEN_SCHEMA,
+        system: SCREEN_SYSTEM,
+        input: merchantText,
+        guard: true,
+        raw: ctx.raw,
+      });
+      if (!r.blocked) break;
+    }
+    return r!;
+  })();
 
   // B3, B4: semantic match through SERV, with the Shadow Agent validating the verdicts.
   const call = await servJson<Semantic>({
@@ -120,7 +128,11 @@ export async function checkout(offer: Offer, ctx: CheckContext): Promise<CheckRe
   });
 
   const screen = await screenCall;
-  const injected = Boolean(screen.data?.addresses_automated_reader) || screen.blocked;
+  // A flag counts only when SERV quotes a sentence that is really in the listing.
+  const norm = (x: string) => x.toLowerCase().replace(/\s+/g, " ").trim();
+  const quote = screen.data?.quote ?? "";
+  const grounded = quote.length > 0 && norm(merchantText).includes(norm(quote));
+  const injected = (Boolean(screen.data?.addresses_automated_reader) && grounded) || screen.blocked;
   if (injected)
     hard.push({
       code: "injection",
